@@ -1,0 +1,1873 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cinematografia para Web Criativa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #0f1115;
+  --surface: #151920;
+  --surface-2: #1d222b;
+  --line: #2c323d;
+  --fg: #ece7dd;
+  --muted: #9ba2ae;
+  --tungsten: #f0a640;
+  --tungsten-soft: rgba(240, 166, 64, 0.14);
+  --daylight: #86b8ff;
+  --daylight-soft: rgba(134, 184, 255, 0.14);
+  --ok: #77c993;
+  --bad: #f07a66;
+  --on-accent: #1a1206;
+  --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --bar-h: 46px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 15px/1.6 var(--body);
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--daylight); outline-offset: 2px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { margin: 0; }
+[hidden] { display: none !important; }
+
+.app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  min-height: 100%;
+}
+
+.content {
+  min-width: 0;
+  padding-inline: clamp(16px, 3.2vw, 48px);
+  padding-block: 0 120px;
+}
+.content-inner { max-width: 680px; margin-inline: auto; display: flex; flex-direction: column; gap: 56px; }
+
+.topbar {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 5;
+  padding-block: 14px 12px;
+  background: linear-gradient(var(--bg) 78%, rgba(15, 17, 21, 0));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.brand-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { font: 600 12px/1.2 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.brand b { color: var(--fg); font-weight: 500; }
+.overall { display: flex; align-items: center; gap: 10px; font: 500 12px/1 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.module-nav { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.module-nav::-webkit-scrollbar { display: none; }
+.mod-btn {
+  flex: 1 0 96px;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 7px 9px 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 96px;
+}
+.mod-btn .num { font: 800 15px/1 var(--display); letter-spacing: 0.04em; color: var(--muted); }
+.mod-btn .t { font-size: 11.5px; line-height: 1.25; color: var(--muted); }
+.mod-btn .bar { height: 3px; background: var(--line); border-radius: 2px; margin-top: 5px; overflow: hidden; }
+.mod-btn .bar i { display: block; height: 100%; width: 0; background: var(--tungsten); }
+.mod-btn[aria-current="true"] { border-color: var(--tungsten); background: var(--surface-2); }
+.mod-btn[aria-current="true"] .num, .mod-btn[aria-current="true"] .t { color: var(--fg); }
+.mod-btn.locked .num::after { content: " · em breve"; font: 500 9px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; vertical-align: middle; }
+
+.trophy-btn {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font: 500 12px/1.2 var(--mono);
+  color: var(--fg);
+}
+.shelf {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 6px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 8px;
+}
+.badge { display: flex; gap: 10px; align-items: center; padding: 6px; }
+.badge .ico { font-size: 22px; width: 32px; text-align: center; }
+.badge .name { font-weight: 600; font-size: 13px; line-height: 1.25; }
+.badge .desc { font-size: 12px; color: var(--muted); line-height: 1.35; }
+.badge.locked { opacity: 0.42; }
+.badge.locked .ico { filter: grayscale(1); }
+
+.slate { border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: var(--surface); }
+.slate-stripes { height: 16px; background: repeating-linear-gradient(-45deg, var(--fg) 0 12px, var(--bg) 12px 24px); opacity: 0.85; }
+.slate-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  font: 500 11px/1.2 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.slate-grid > div { padding: 8px 10px; border-left: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.slate-grid > div:first-child { border-left: 0; }
+.slate-grid span { color: var(--muted); }
+.slate-grid b { font: 800 20px/1 var(--display); letter-spacing: 0.03em; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.hero-title { display: flex; flex-direction: column; gap: 14px; padding-top: 18px; }
+.hero-title h1 { font: 800 clamp(44px, 5.4vw, 72px)/0.92 var(--display); text-transform: uppercase; letter-spacing: 0.005em; }
+.hero-title h1 em { font-style: normal; color: var(--tungsten); }
+.lede { font-size: 17px; line-height: 1.55; color: var(--fg); max-width: 60ch; }
+.lede-muted { color: var(--muted); font-size: 14px; max-width: 62ch; }
+
+.section { display: flex; flex-direction: column; gap: 16px; }
+.eyebrow { font: 500 11px/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--tungsten); }
+.section h2 { font: 800 34px/1 var(--display); text-transform: uppercase; letter-spacing: 0.01em; }
+.section > p { max-width: 64ch; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font: 500 13px/1.2 var(--mono);
+  cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--daylight-soft); border-color: var(--daylight); }
+.chip[aria-pressed="true"]::before { content: "✓ "; color: var(--daylight); }
+.chip.static { cursor: default; }
+
+.term-list { display: flex; flex-direction: column; }
+.term { border-top: 1px solid var(--line); padding-block: 22px; display: flex; flex-direction: column; gap: 12px; }
+.term:last-child { border-bottom: 1px solid var(--line); }
+.term-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; }
+.term-head h3 { font: 800 28px/1 var(--display); text-transform: uppercase; letter-spacing: 0.01em; }
+.aka { font: 400 12px/1.2 var(--mono); color: var(--muted); }
+.term-status { margin-left: auto; font: 500 11px/1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ok); }
+.term-status.known { color: var(--daylight); }
+.analogy { font-size: 17px; line-height: 1.5; max-width: 60ch; }
+.analogy::before { content: "Analogia  "; font: 500 10.5px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--tungsten); vertical-align: 2px; }
+.definition { color: var(--muted); max-width: 60ch; }
+.definition b { color: var(--fg); font-weight: 600; }
+.demo-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.term-body { display: flex; flex-direction: column; gap: 12px; }
+.term.is-known:not(.expanded) .term-body > :not(.definition):not(.reopen) { display: none; }
+.reopen { display: none; }
+.term.is-known .reopen { display: inline-flex; }
+.term.is-known.expanded .reopen { display: none; }
+
+.more summary { cursor: pointer; font: 500 12px var(--mono); color: var(--muted); letter-spacing: 0.04em; width: fit-content; }
+.more summary:hover { color: var(--fg); }
+.more dl { margin: 10px 0 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 14px; font-size: 14px; }
+.more dt { font: 500 11px/1.9 var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.more dd { margin: 0; }
+.more code, .inline-code { font: 13px var(--mono); color: var(--daylight); }
+
+.alt { background: var(--daylight-soft); border-radius: 4px; padding: 10px 12px; max-width: 62ch; }
+.alt::before { content: "Outro jeito  "; font: 500 10.5px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--daylight); }
+
+.btn {
+  font: 500 12.5px/1.2 var(--mono);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  padding: 8px 11px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover { border-color: var(--tungsten); }
+.btn.primary { background: var(--tungsten); color: var(--on-accent); border-color: var(--tungsten); font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn[aria-pressed="true"] { border-color: var(--tungsten); background: var(--tungsten-soft); }
+.link-btn { background: none; border: 0; padding: 0; cursor: pointer; font: 500 12.5px var(--mono); color: var(--daylight); text-decoration: underline; text-underline-offset: 3px; width: fit-content; }
+
+.critical { display: flex; flex-direction: column; gap: 14px; }
+.split-table { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.split-table > div { background: var(--surface); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.split-table h4 { margin: 0; font: 500 12px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; }
+.split-table .pos h4 { color: var(--tungsten); }
+.split-table .rot h4 { color: var(--daylight); }
+.split-table p { font-size: 14px; color: var(--muted); }
+.diagram { width: 100%; height: auto; display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; }
+.diagram text { font-family: var(--mono); font-size: 11px; fill: var(--muted); letter-spacing: 0.04em; }
+.diagram .lbl { fill: var(--fg); font-size: 12px; }
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 4px; }
+table.cheat { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 13.5px; }
+.cheat th, .cheat td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+.cheat th { font: 500 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); background: var(--surface); }
+.cheat td:first-child { font-weight: 600; white-space: nowrap; }
+.cheat td:last-child { font: 12.5px/1.5 var(--mono); color: var(--daylight); }
+.cheat tr:last-child td { border-bottom: 0; }
+
+.quiz { display: flex; flex-direction: column; gap: 18px; }
+.q { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.q legend { font-weight: 600; padding: 0; margin-bottom: 8px; max-width: 62ch; }
+.opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.opt { text-align: left; border: 1px solid var(--line); background: var(--surface); padding: 9px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+.opt:hover:not(:disabled) { border-color: var(--fg); }
+.opt:disabled { cursor: default; }
+.opt.right { border-color: var(--ok); background: rgba(119, 201, 147, 0.12); }
+.opt.wrong { border-color: var(--bad); background: rgba(240, 122, 102, 0.12); }
+.q-feedback { font-size: 14px; color: var(--muted); max-width: 62ch; }
+.q-feedback.right b { color: var(--ok); }
+.q-feedback.wrong b { color: var(--bad); }
+.quiz-foot { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font: 500 13px var(--mono); }
+
+.criteria { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.criteria li { display: flex; gap: 10px; align-items: baseline; }
+.criteria li::before { content: "○"; color: var(--muted); font-family: var(--mono); }
+.criteria li.done::before { content: "●"; color: var(--ok); }
+
+.award { display: flex; gap: 18px; align-items: center; border: 1px dashed var(--line); border-radius: 6px; padding: 18px; }
+.award .ico { font-size: 44px; line-height: 1; }
+.award.unlocked { border-style: solid; border-color: var(--tungsten); background: var(--tungsten-soft); }
+.award:not(.unlocked) .ico { filter: grayscale(1); opacity: 0.45; }
+.award h3 { font: 800 26px/1 var(--display); text-transform: uppercase; }
+.award p { color: var(--muted); font-size: 14px; }
+
+.sandbox {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--line);
+  background: var(--surface);
+  min-width: 0;
+}
+.sandbox-bar {
+  height: var(--bar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-inline: 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.sandbox-bar .title { font: 500 11px/1.2 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.sandbox-bar .title b { color: var(--fg); font-weight: 500; }
+.tools { display: flex; gap: 6px; flex-shrink: 0; }
+.tools .btn { padding: 6px 9px; font-size: 11.5px; }
+
+.stage { position: relative; flex: 1 1 auto; min-height: 240px; overflow: hidden; background: var(--bg); }
+#scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.frame { position: absolute; pointer-events: none; }
+.frame.monitor { border: 1px solid var(--line); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45); }
+.frame.monitor.cam-a { border-color: rgba(240, 166, 64, 0.6); }
+.frame.monitor.cam-b { border-color: rgba(134, 184, 255, 0.6); }
+.frame.fullscreen { border-color: transparent; box-shadow: none; }
+.frame-label {
+  position: absolute;
+  left: 8px;
+  top: 7px;
+  font: 500 10.5px/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(15, 17, 21, 0.78);
+  color: var(--fg);
+  padding: 4px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.frame-label .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+.cam-a .dot { background: var(--tungsten); }
+.cam-b .dot { background: var(--daylight); }
+.corners {
+  position: absolute;
+  inset: 10px;
+  opacity: 0.5;
+  --c: var(--fg);
+  background:
+    linear-gradient(var(--c), var(--c)) left top / 14px 1px no-repeat,
+    linear-gradient(var(--c), var(--c)) left top / 1px 14px no-repeat,
+    linear-gradient(var(--c), var(--c)) right top / 14px 1px no-repeat,
+    linear-gradient(var(--c), var(--c)) right top / 1px 14px no-repeat,
+    linear-gradient(var(--c), var(--c)) left bottom / 14px 1px no-repeat,
+    linear-gradient(var(--c), var(--c)) left bottom / 1px 14px no-repeat,
+    linear-gradient(var(--c), var(--c)) right bottom / 14px 1px no-repeat,
+    linear-gradient(var(--c), var(--c)) right bottom / 1px 14px no-repeat;
+}
+.frame-set .corners { display: none; }
+.frame-hud {
+  position: absolute;
+  left: 8px;
+  bottom: 7px;
+  font: 500 10.5px/1.3 var(--mono);
+  background: rgba(15, 17, 21, 0.78);
+  padding: 4px 6px;
+  border-radius: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.changed-chip {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  max-width: calc(100% - 20px);
+  font: 500 11px/1.3 var(--mono);
+  background: rgba(15, 17, 21, 0.82);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 5px 8px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.changed-chip b { color: var(--tungsten); font-weight: 500; }
+.toast {
+  position: absolute;
+  left: 50%;
+  top: 46px;
+  transform: translateX(-50%);
+  max-width: min(90%, 420px);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 13px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.codepanel { border-top: 1px solid var(--line); padding: 10px 14px 12px; display: flex; flex-direction: column; gap: 8px; max-height: 34vh; overflow: auto; }
+.codepanel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font: 500 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.codepanel-head b { color: var(--fg); font-weight: 500; }
+.codepanel pre { margin: 0; font: 12.5px/1.6 var(--mono); white-space: pre; overflow-x: auto; color: var(--fg); }
+.tk-com { color: #7d8594; font-style: italic; }
+.tk-str { color: #a8d59a; }
+.tk-num { color: var(--tungsten); }
+.tk-kw { color: #c9a6ff; }
+.tk-prop { color: var(--daylight); }
+.readout { display: grid; grid-template-columns: max-content repeat(3, minmax(0, 1fr)); gap: 2px 10px; font: 12px/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+.readout .prop { color: var(--muted); }
+.readout .val { color: var(--fg); transition: color 0.2s; }
+.readout .val.changed { color: var(--tungsten); }
+.readout .val.changed::after { content: " Δ"; font-size: 10px; }
+.readout .cam-tag { grid-column: 1 / -1; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 4px; }
+.readout .cam-tag.a { color: var(--tungsten); }
+.readout .cam-tag.b { color: var(--daylight); }
+
+.controls { border-top: 1px solid var(--line); padding: 10px 14px 14px; display: flex; flex-direction: column; gap: 10px; }
+.tabs { display: flex; gap: 4px; }
+.tab { background: none; border: 0; border-bottom: 2px solid transparent; padding: 4px 6px; cursor: pointer; font: 500 11.5px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--tungsten); }
+.moves-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 5px; }
+.moves-grid .btn { padding: 7px 8px; font-size: 11.5px; text-align: center; }
+.moves-grid .btn.wide { grid-column: span 2; background: var(--daylight-soft); border-color: rgba(134, 184, 255, 0.45); }
+.challenge-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.8fr); gap: 10px 14px; align-items: end; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field label { font: 500 11px var(--mono); letter-spacing: 0.04em; color: var(--muted); display: flex; justify-content: space-between; gap: 6px; }
+.field output { color: var(--tungsten); font-variant-numeric: tabular-nums; }
+.field input[type="range"] { width: 100%; accent-color: var(--tungsten); }
+.field select { background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; font: 12px var(--mono); }
+.challenge-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.ch-result { font-size: 13.5px; line-height: 1.45; }
+.ch-result.ok { color: var(--ok); }
+.ch-result.bad { color: var(--bad); }
+.panel-note { font-size: 13px; color: var(--muted); }
+
+.modal-backdrop { position: fixed; inset: 0; z-index: 50; background: rgba(5, 6, 8, 0.72); display: grid; place-items: center; padding: 16px; }
+.modal {
+  width: min(420px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--tungsten);
+  border-radius: 8px;
+  overflow: hidden;
+  text-align: center;
+}
+.modal .slate-stripes { height: 14px; }
+.modal-body { padding: 26px 24px 22px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.modal .ico { font-size: 64px; line-height: 1; }
+.modal .kicker { font: 500 11px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--tungsten); }
+.modal h2 { font: 800 34px/1 var(--display); text-transform: uppercase; }
+.modal p { color: var(--muted); font-size: 14px; }
+.pop { animation: pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1); }
+@keyframes pop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.placeholder-terms { display: flex; flex-wrap: wrap; gap: 6px; }
+
+@media (max-width: 900px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .sandbox { display: contents; }
+  .sandbox-bar { order: -4; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 8; padding-inline: 16px; }
+  .stage { order: -3; position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--bar-h)); z-index: 8; flex: none; height: min(40svh, 60vw); min-height: 200px; border-bottom: 1px solid var(--line); }
+  .sandbox-bar, .stage, .controls, .codepanel { min-width: 0; }
+  .controls { order: -2; padding-inline: 16px; }
+  .codepanel { order: -1; max-height: none; padding-inline: 16px; }
+  .content { order: 0; }
+  .topbar { position: static; background: none; }
+  .content-inner { gap: 44px; }
+  .challenge-form { grid-template-columns: minmax(0, 1fr); }
+  .opts { grid-template-columns: minmax(0, 1fr); }
+  .split-table { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 480px) {
+  .tools .btn .lbl-long { display: none; }
+  .slate-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .slate-grid > div:nth-child(3) { border-left: 0; }
+  .slate-grid > div:nth-child(n + 3) { border-top: 1px solid var(--line); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <main class="content">
+    <header class="topbar">
+      <div class="brand-row">
+        <div class="brand"><b>Cinematografia</b> para Web Criativa</div>
+        <div class="overall">
+          <span id="overall-label">0%</span>
+          <button class="trophy-btn" id="trophy-btn" aria-expanded="false" aria-controls="shelf">🏆 <span id="trophy-count">0/7</span></button>
+        </div>
+      </div>
+      <div class="shelf" id="shelf" hidden></div>
+      <nav class="module-nav" id="module-nav" aria-label="Módulos"></nav>
+    </header>
+    <div class="content-inner" id="module-content"></div>
+  </main>
+
+  <aside class="sandbox" aria-label="Sandbox 3D">
+    <div class="sandbox-bar">
+      <div class="title" id="sandbox-title">Sandbox · <b>Cam A 35mm</b></div>
+      <div class="tools">
+        <button class="btn" id="btn-setview" aria-pressed="true" title="Câmera externa mostrando a câmera da cena">🎥 <span class="lbl-long">Visão de </span>set</button>
+        <button class="btn" id="btn-motion" aria-pressed="true" title="Liga ou desliga as animações das demos">Animar</button>
+        <button class="btn" id="btn-reset">↺ <span class="lbl-long">Resetar</span></button>
+      </div>
+    </div>
+    <div class="stage" id="stage">
+      <canvas id="scene"></canvas>
+      <div class="frame frame-set" id="frame-set" hidden><span class="frame-label">Visão de set · arraste para girar</span></div>
+      <div class="frame monitor cam-a" id="frame-a" hidden><div class="corners"></div><span class="frame-label"><span class="dot"></span><span class="txt">Cam A · 35mm</span></span><span class="frame-hud" hidden></span></div>
+      <div class="frame monitor cam-b" id="frame-b" hidden><div class="corners"></div><span class="frame-label"><span class="dot"></span><span class="txt">Cam B · 35mm</span></span></div>
+      <div class="changed-chip" id="changed-chip">mudou → <b>nada ainda</b></div>
+      <div class="toast" id="toast" role="status" hidden></div>
+    </div>
+    <section class="controls" id="controls"></section>
+    <section class="codepanel" aria-label="Código da demonstração">
+      <div class="codepanel-head"><span>Código · <b id="code-title">escolha um movimento</b></span><span>ao vivo</span></div>
+      <pre id="code-body"></pre>
+      <div class="readout" id="readout"></div>
+    </section>
+  </aside>
+</div>
+<div id="modal-root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const gsap = window.gsap;
+const UP = new THREE.Vector3(0, 1, 0);
+const MONITOR_ASPECT = 16 / 9;
+const SENSOR_HEIGHT_MM = 24;
+const FOCAL_MM = 35;
+const HERO_TOP = 2.06;
+const HOME = { pos: new THREE.Vector3(0, 1.6, 7), target: new THREE.Vector3(0, 1.2, 0) };
+const SET_CAM_HOME = { pos: new THREE.Vector3(9, 6.5, 13.5), target: new THREE.Vector3(0, 1, 2.5) };
+const CHALLENGE_START_Z = 10;
+const MOVE_EASE = 'power2.inOut';
+const COLOR = { tungsten: 0xf0a640, daylight: 0x86b8ff, letterbox: 0x0f1115, sky: 0x14171d };
+const STORAGE_KEY = 'cine-course.progress.v1';
+const MOTION_KEY = 'cine-course.motion';
+
+const fovFromFocal = mm => THREE.MathUtils.radToDeg(2 * Math.atan(SENSOR_HEIGHT_MM / (2 * mm)));
+const $ = id => document.getElementById(id);
+
+const storage = {
+  read(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw === null ? fallback : JSON.parse(raw);
+    } catch {
+      return fallback;
+    }
+  },
+  write(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+  },
+};
+
+const DEFAULT_PROGRESS = {
+  m1: { known: [], seen: [], compared: false, quiz: {}, challenge: false },
+  achievements: [],
+  resets: 0,
+  takes: 0,
+};
+const saved = storage.read(STORAGE_KEY, {});
+const progress = { ...structuredClone(DEFAULT_PROGRESS), ...saved, m1: { ...DEFAULT_PROGRESS.m1, ...(saved.m1 || {}) } };
+const saveProgress = () => storage.write(STORAGE_KEY, progress);
+
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const state = {
+  module: 1,
+  motion: storage.read(MOTION_KEY, !prefersReducedMotion),
+  setView: true,
+  compare: false,
+  panelTab: 'moves',
+  tags: { A: '', B: '' },
+  baseline: null,
+  challengeActive: false,
+};
+const dur = seconds => (state.motion ? seconds : 0);
+
+const MODULES = [
+  { id: 1, title: 'A câmera se move', ready: true },
+  { id: 2, title: 'A lente', terms: ['focal length', '24/35/50/85mm', 'FOV', 'wide vs telephoto', 'compressão de perspectiva', 'dolly zoom', 'depth of field', 'focus pull', 'near/far clipping'] },
+  { id: 3, title: 'Composição', terms: ['rule of thirds', 'leading lines', 'negative space', 'headroom', 'lead room', 'framing', 'eye level', 'high angle', 'low angle', 'dutch angle', 'symmetry'] },
+  { id: 4, title: 'Luz', terms: ['three-point lighting', 'key light', 'fill light', 'rim light', 'hard vs soft', 'contrast ratio', 'color temperature', 'motivated light', 'practical light', 'silhouette'] },
+  { id: 5, title: 'Ritmo e montagem', terms: ['easing', 'ease-in / ease-out', 'hold', 'beat', 'pacing', 'cut vs transition', 'match cut', '180-degree rule', 'continuity'] },
+  { id: 6, title: 'Storyboard e shot list', terms: ['shot', 'scene', 'sequence', 'storyboard', 'shot list', 'notação de movimento', 'establishing shot', 'coverage'] },
+];
+
+const ACHIEVEMENTS = [
+  { id: 'm1', module: 1, icon: '🛤️', name: 'Habilitação de Dolly', desc: 'Separou position de rotation. Nunca mais vai chamar truck de pan.' },
+  { id: 'm2', module: 2, icon: '🔭', name: 'Fala Fluente de Lente', desc: 'Sabe que dolly não é zoom e tem a fórmula pra provar.' },
+  { id: 'm3', module: 3, icon: '📐', name: 'Olho de Terços', desc: 'Tira o herói do meio do quadro sem dó.' },
+  { id: 'm4', module: 4, icon: '💡', name: 'Gaffer Honorário', desc: 'Cada luz com seu emprego. Nenhuma de enfeite.' },
+  { id: 'm5', module: 5, icon: '⏱️', name: 'Maestria em Easing', desc: 'Câmera que respira. Robô nenhum.' },
+  { id: 'm6', module: 6, icon: '🏆', name: 'Diretor da Própria Cena', desc: 'Storyboard virou spec, spec virou código.' },
+  { id: 'stagehand', icon: '🧹', name: 'Contrarregra de Plantão', desc: 'Resetou o set 10 vezes. O set agradece.', secret: true },
+];
+
+const TERMS_M1 = [
+  {
+    id: 'dolly', name: 'Dolly in / out', aka: 'push-in / pull-out',
+    analogy: 'Andar em direção a alguém numa festa pra puxar papo. Você chega mais perto; seus olhos continuam os mesmos.',
+    short: 'andar até alguém pra puxar papo',
+    definition: 'A câmera inteira anda pra frente (push-in) ou pra trás (pull-out).',
+    screen: 'O herói cresce no quadro. O que está perto cresce mais rápido que o fundo, e caixotes da frente passam por você.',
+    code: 'camera.position ao longo da direção do olhar. fov não muda.',
+    alt: 'Abre o código do OrbitControls: a roda do mouse chama funções chamadas dollyIn e dollyOut. Você faz dolly há anos e ninguém te contou.',
+    demos: [['dollyIn', 'push-in'], ['dollyOut', 'pull-out']],
+  },
+  {
+    id: 'truck', name: 'Truck', aka: 'left / right',
+    analogy: 'Andar de lado na calçada olhando uma vitrine. O corpo vai pro lado, a cabeça continua olhando reto.',
+    short: 'andar de lado olhando a vitrine',
+    definition: 'A câmera desliza pro lado sem girar.',
+    screen: 'Paralaxe: o que está perto passa rápido, o fundo quase não se mexe.',
+    code: 'camera.position e target somam o mesmo vetor "direita". rotation não muda.',
+    alt: 'Olha pela janela de um trem: o poste passa voando, a montanha lá longe quase parada. Isso é um truck com o trem fazendo o trabalho pesado.',
+    demos: [['truckLeft', 'truck ←'], ['truckRight', 'truck →']],
+  },
+  {
+    id: 'pedestal', name: 'Pedestal', aka: 'up / down',
+    analogy: 'Elevador panorâmico: você sobe olhando sempre reto pra frente.',
+    short: 'elevador panorâmico',
+    definition: 'A câmera sobe ou desce na vertical, sem inclinar.',
+    screen: 'O mundo desliza na vertical, com paralaxe: o chão perto some mais rápido que o fundo.',
+    code: 'camera.position.y e target.y juntos.',
+    alt: 'Pedestal é agachar pra falar com uma criança: você desce até a altura dela. Tilt seria ficar em pé e só baixar o olhar. O primeiro conversa de igual pra igual, o segundo olha de cima.',
+    demos: [['pedestalUp', 'pedestal ↑'], ['pedestalDown', 'pedestal ↓']],
+  },
+  {
+    id: 'pan', name: 'Pan', aka: 'left / right',
+    analogy: 'Ver uma partida de tênis da arquibancada: o corpo fica parado, só a cabeça vira de um lado pro outro.',
+    short: 'ver tênis da arquibancada',
+    definition: 'A câmera gira no próprio eixo vertical, pra esquerda ou pra direita.',
+    screen: 'Tudo desliza na mesma velocidade, perto e longe. Zero paralaxe.',
+    code: 'camera.rotation.y (ou o target gira em volta da câmera). position fixa.',
+    alt: 'Foto panorâmica no celular: você gira parado no lugar. O nome vem daí mesmo: panorama, pan.',
+    demos: [['panLeft', 'pan ←'], ['panRight', 'pan →']],
+  },
+  {
+    id: 'tilt', name: 'Tilt', aka: 'up / down',
+    analogy: 'Olhar um prédio do pé até o topo sem sair da calçada.',
+    short: 'olhar um prédio de baixo pra cima',
+    definition: 'A câmera inclina pra cima ou pra baixo, sem sair do lugar.',
+    screen: 'O quadro varre na vertical. Nada muda de profundidade.',
+    code: 'camera.rotation.x. position fixa.',
+    alt: 'Faz agora: olha pro teto sem mexer os pés. Isso foi um tilt up. Seu pescoço é um tripé com cabeça fluida.',
+    demos: [['tiltUp', 'tilt ↑'], ['tiltDown', 'tilt ↓']],
+  },
+  {
+    id: 'orbit', name: 'Orbit', aka: 'arc shot',
+    analogy: 'Rodear a mesa do bolo de aniversário olhando sempre pro bolo.',
+    short: 'rodear a mesa do bolo',
+    definition: 'A câmera anda em círculo em volta do herói, sempre mirando nele.',
+    screen: 'O herói gira no quadro (vemos o lado, depois as costas) e o fundo corre atrás dele.',
+    code: 'position em sin/cos em volta do herói + lookAt(hero). É o que o OrbitControls faz com o mouse.',
+    alt: 'Cena de herói depois da vitória em filme de ação: a câmera dá a volta nele em câmera lenta. Clichê? Sim. Funciona? Também.',
+    demos: [['orbitLeft', 'orbit ⟲'], ['orbitRight', 'orbit ⟳']],
+  },
+  {
+    id: 'crane', name: 'Crane / Jib', aka: 'braço de grua',
+    analogy: 'Ser levantado por um guindaste segurando o celular: você sobe em arco e continua filmando a mesma coisa.',
+    short: 'subir num guindaste filmando',
+    definition: 'A câmera vai na ponta de um braço que sobe ou desce em arco. Jib é o braço compacto.',
+    screen: 'Começa na altura do olho e termina vendo o herói de cima, revelando o espaço em volta.',
+    code: 'position.y e position.z em tweens paralelos com eases diferentes (vira arco) + lookAt(target).',
+    alt: 'Final clássico de filme: o personagem fica pequenininho na rua enquanto a câmera sobe e mostra a cidade inteira. Isso é crane up. Fecha a história abrindo o espaço.',
+    demos: [['craneUp', 'crane ↑'], ['craneDown', 'crane ↓']],
+  },
+  {
+    id: 'tracking', name: 'Tracking shot', aka: 'follow',
+    analogy: 'Caminhar do lado de um amigo conversando: vocês vão na mesma velocidade e ele fica sempre do seu lado.',
+    short: 'caminhar ao lado de um amigo',
+    definition: 'A câmera acompanha o herói enquanto ele se move.',
+    screen: 'O herói fica parado no quadro; o mundo passa atrás dele.',
+    code: 'o mesmo delta em hero.position e camera.position (+ target), na mesma timeline, ease "none".',
+    alt: 'Jogo de plataforma 2D: a câmera segue o personagem e o cenário rola atrás. Todo side-scroller é um tracking shot que nunca acaba.',
+    demos: [['tracking', 'tracking']],
+  },
+];
+
+const QUIZ_M1 = [
+  {
+    id: 'q1',
+    text: 'Os caixotes da frente passam voando, os pilares do fundo quase não se mexem. Que movimento é esse?',
+    options: ['Pan', 'Truck', 'Tilt', 'Zoom'],
+    answer: 1,
+    why: [
+      'Pan não tem paralaxe: perto e longe deslizam juntos.',
+      'Paralaxe é a assinatura de câmera que anda. Andou de lado = truck.',
+      'Tilt é vertical e também não tem paralaxe.',
+      'Zoom nem é movimento de câmera, é lente. Assunto do Módulo 2.',
+    ],
+  },
+  {
+    id: 'q2',
+    text: 'No storyboard está escrito "pan right". No three.js, o que muda?',
+    options: ['camera.position.x', 'camera.rotation.y', 'camera.fov', 'hero.position.x'],
+    answer: 1,
+    why: [
+      'Mexer em position.x é truck. A câmera andaria.',
+      'Pan é girar a cabeça: rotation.y (ou o target girando em volta da câmera).',
+      'fov é lente. A câmera nem se mexe.',
+      'Aí quem se mexe é o herói, não a câmera.',
+    ],
+  },
+  {
+    id: 'q3',
+    text: 'Qual movimento deixa o herói parado no quadro enquanto o cenário passa atrás?',
+    options: ['Pedestal', 'Dolly out', 'Tracking shot', 'Tilt'],
+    answer: 2,
+    why: [
+      'Pedestal sobe/desce a câmera; o herói desliza no quadro.',
+      'Dolly out afasta: o herói encolhe.',
+      'Isso. Câmera e herói andam juntos, o mundo corre atrás.',
+      'Tilt inclina a câmera; o herói sai do quadro na vertical.',
+    ],
+  },
+];
+
+const renderer = new THREE.WebGLRenderer({ canvas: $('scene'), antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setScissorTest(true);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(COLOR.sky);
+scene.fog = new THREE.Fog(COLOR.sky, 18, 46);
+
+scene.add(new THREE.HemisphereLight(0xc9dcff, 0x2a2118, 1.2));
+const sun = new THREE.DirectionalLight(0xffe2b8, 2.4);
+sun.position.set(5, 9, 6);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 34 });
+scene.add(sun);
+
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), new THREE.MeshStandardMaterial({ color: 0x1c2027, roughness: 0.95 }));
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+scene.add(floor);
+const grid = new THREE.GridHelper(90, 90, 0x3a4250, 0x272d37);
+grid.position.y = 0.002;
+scene.add(grid);
+
+function addFloorStripe(fromX, fromZ, toX, toZ, color, width = 0.07) {
+  const dx = toX - fromX;
+  const dz = toZ - fromZ;
+  const stripe = new THREE.Mesh(
+    new THREE.PlaneGeometry(width, Math.hypot(dx, dz)),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.75 }),
+  );
+  stripe.rotation.order = 'YXZ';
+  stripe.rotation.set(-Math.PI / 2, Math.atan2(dx, dz), 0);
+  stripe.position.set((fromX + toX) / 2, 0.004, (fromZ + toZ) / 2);
+  scene.add(stripe);
+}
+addFloorStripe(-3.6, 10, -0.5, 0.45, COLOR.tungsten);
+addFloorStripe(3.6, 10, 0.5, 0.45, COLOR.tungsten);
+addFloorStripe(-0.25, 0.6, 0.25, 0.6, COLOR.daylight, 0.08);
+addFloorStripe(0, 0.6, 0, 0.95, COLOR.daylight, 0.08);
+
+const hero = new THREE.Group();
+const heroModel = new THREE.Group();
+hero.add(heroModel);
+const heroMat = new THREE.MeshStandardMaterial({ color: COLOR.tungsten, roughness: 0.55 });
+const heroBody = new THREE.Mesh(new THREE.CapsuleGeometry(0.32, 0.9, 6, 18), heroMat);
+heroBody.position.y = 0.77;
+const heroHead = new THREE.Mesh(new THREE.SphereGeometry(0.25, 28, 18), heroMat);
+heroHead.position.y = 1.81;
+const heroVisor = new THREE.Mesh(
+  new THREE.BoxGeometry(0.32, 0.09, 0.08),
+  new THREE.MeshStandardMaterial({ color: COLOR.daylight, emissive: COLOR.daylight, emissiveIntensity: 0.7 }),
+);
+heroVisor.position.set(0, 1.84, 0.22);
+heroModel.add(heroBody, heroHead, heroVisor);
+heroModel.traverse(o => { o.castShadow = true; });
+scene.add(hero);
+
+const pillarMat = new THREE.MeshStandardMaterial({ color: 0x5c6573, roughness: 0.8 });
+const pillarGeo = new THREE.CylinderGeometry(0.32, 0.32, 3.4, 20);
+[[-2.6, -1.5], [2.4, -3.6], [-1.3, -7], [3.4, -9.5], [-4.2, -13], [1.2, -16.5], [-6.5, -5], [6, -6.5], [-7.5, 2], [7, 1]].forEach(([x, z]) => {
+  const pillar = new THREE.Mesh(pillarGeo, pillarMat);
+  pillar.position.set(x, 1.7, z);
+  pillar.castShadow = pillar.receiveShadow = true;
+  scene.add(pillar);
+});
+
+const crateMat = new THREE.MeshStandardMaterial({ color: 0x6e5c46, roughness: 0.85 });
+[[-1.25, 4.4, 0.6, 0.3], [1.6, 3.2, 0.5, -0.2], [-2.5, 1.6, 0.7, 0.5]].forEach(([x, z, size, turn]) => {
+  const crate = new THREE.Mesh(new THREE.BoxGeometry(size, size, size), crateMat);
+  crate.position.set(x, size / 2, z);
+  crate.rotation.y = turn;
+  crate.castShadow = crate.receiveShadow = true;
+  scene.add(crate);
+});
+
+function buildCameraBody(color) {
+  const group = new THREE.Group();
+  const shell = new THREE.MeshStandardMaterial({ color: 0x2a2f38, roughness: 0.5 });
+  const accent = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.35 });
+  const box = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.3, 0.52), shell);
+  const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 0.22, 20), accent);
+  lens.rotation.x = Math.PI / 2;
+  lens.position.z = -0.37;
+  const reelGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.05, 24);
+  [0.13, -0.13].forEach(z => {
+    const reel = new THREE.Mesh(reelGeo, accent);
+    reel.rotation.z = Math.PI / 2;
+    reel.position.set(0, 0.3, z);
+    group.add(reel);
+  });
+  group.add(box, lens);
+  group.traverse(o => o.layers.set(1));
+  return group;
+}
+
+function createShot(name, color) {
+  const cam = new THREE.PerspectiveCamera(fovFromFocal(FOCAL_MM), MONITOR_ASPECT, 0.1, 140);
+  cam.rotation.order = 'YXZ';
+  const frustumProxy = new THREE.PerspectiveCamera(cam.fov, MONITOR_ASPECT, 0.3, 3.2);
+  const frustum = new THREE.CameraHelper(frustumProxy);
+  const tint = new THREE.Color(color);
+  frustum.setColors(tint, tint, tint, tint, tint);
+  frustum.layers.set(1);
+  const body = buildCameraBody(color);
+  const sight = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]),
+    new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.45 }),
+  );
+  sight.frustumCulled = false;
+  sight.layers.set(1);
+  const targetMarker = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 8), new THREE.MeshBasicMaterial({ color }));
+  targetMarker.layers.set(1);
+  scene.add(frustum, body, sight, targetMarker);
+  return {
+    name, cam, frustumProxy, frustum, body, sight, targetMarker,
+    rig: { pos: HOME.pos.clone(), target: HOME.target.clone() },
+    active: null,
+  };
+}
+
+const camA = createShot('A', COLOR.tungsten);
+const camB = createShot('B', COLOR.daylight);
+
+function setShotVisible(shot, visible) {
+  [shot.frustum, shot.body, shot.sight, shot.targetMarker].forEach(o => { o.visible = visible; });
+}
+setShotVisible(camB, false);
+
+function syncShot(shot) {
+  const { cam, rig, frustumProxy } = shot;
+  cam.position.copy(rig.pos);
+  cam.lookAt(rig.target);
+  cam.updateMatrixWorld();
+  frustumProxy.position.copy(cam.position);
+  frustumProxy.quaternion.copy(cam.quaternion);
+  frustumProxy.fov = cam.fov;
+  frustumProxy.updateProjectionMatrix();
+  frustumProxy.updateMatrixWorld();
+  shot.frustum.update();
+  shot.body.position.copy(cam.position);
+  shot.body.quaternion.copy(cam.quaternion);
+  const line = shot.sight.geometry.attributes.position;
+  line.setXYZ(0, rig.pos.x, rig.pos.y, rig.pos.z);
+  line.setXYZ(1, rig.target.x, rig.target.y, rig.target.z);
+  line.needsUpdate = true;
+  shot.targetMarker.position.copy(rig.target);
+}
+
+const setCam = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
+setCam.position.copy(SET_CAM_HOME.pos);
+setCam.layers.enable(1);
+const orbit = new OrbitControls(setCam, renderer.domElement);
+orbit.target.copy(SET_CAM_HOME.target);
+orbit.enableDamping = true;
+orbit.maxPolarAngle = Math.PI * 0.495;
+orbit.minDistance = 3;
+orbit.maxDistance = 40;
+orbit.update();
+
+const viewDir = shot => shot.rig.target.clone().sub(shot.rig.pos);
+const rightOf = shot => viewDir(shot).cross(UP).normalize();
+const horizontal = v => v.clone().setY(0);
+
+function dolly(shot, direction, seconds) {
+  const dir = viewDir(shot);
+  const distance = dir.length();
+  dir.normalize();
+  const step = direction > 0 ? Math.min(3, distance - 2) : Math.min(3, 24 - distance);
+  if (step <= 0.05) {
+    notify(direction > 0 ? 'Mais perto que isso o herói chama a segurança. Tenta um pull-out.' : 'Já tá longe demais. Daqui só de drone.');
+    return null;
+  }
+  const end = shot.rig.pos.clone().addScaledVector(dir, step * direction);
+  return gsap.to(shot.rig.pos, { x: end.x, y: end.y, z: end.z, duration: seconds, ease: MOVE_EASE });
+}
+
+function truck(shot, direction, seconds, distance = 2.5) {
+  const offset = rightOf(shot).multiplyScalar(distance * direction);
+  return gsap.to([shot.rig.pos, shot.rig.target], { x: `+=${offset.x}`, z: `+=${offset.z}`, duration: seconds, ease: MOVE_EASE });
+}
+
+function pedestal(shot, direction, seconds) {
+  const amount = direction > 0 ? Math.min(1.5, 6 - shot.rig.pos.y) : -Math.min(1.5, shot.rig.pos.y - 0.4);
+  if (Math.abs(amount) < 0.05) {
+    notify(direction > 0 ? 'O pedestal chegou no talo. Pra subir mais, só de crane.' : 'Mais baixo que isso a câmera vira tapete.');
+    return null;
+  }
+  return gsap.to([shot.rig.pos, shot.rig.target], { y: `+=${amount}`, duration: seconds, ease: MOVE_EASE });
+}
+
+function rotateTargetAroundCamera(shot, axis, angle, seconds) {
+  const base = viewDir(shot);
+  const turn = { angle: 0 };
+  return gsap.to(turn, {
+    angle,
+    duration: seconds,
+    ease: MOVE_EASE,
+    onUpdate: () => shot.rig.target.copy(shot.rig.pos).add(base.clone().applyAxisAngle(axis, turn.angle)),
+  });
+}
+
+const pan = (shot, direction, seconds, angle = 0.34) => rotateTargetAroundCamera(shot, UP, -direction * angle, seconds);
+
+function tilt(shot, direction, seconds) {
+  const pitch = Math.asin(viewDir(shot).normalize().y);
+  const limit = 1.2;
+  const angle = THREE.MathUtils.clamp(pitch + direction * 0.3, -limit, limit) - pitch;
+  return rotateTargetAroundCamera(shot, rightOf(shot), angle, seconds);
+}
+
+function orbitAround(shot, direction, seconds) {
+  const offset = shot.rig.pos.clone().sub(shot.rig.target);
+  const sweep = { angle: 0 };
+  return gsap.to(sweep, {
+    angle: direction * Math.PI / 2,
+    duration: seconds * 1.3,
+    ease: MOVE_EASE,
+    onUpdate: () => shot.rig.pos.copy(shot.rig.target).add(offset.clone().applyAxisAngle(UP, sweep.angle)),
+  });
+}
+
+function crane(shot, direction, seconds) {
+  const { pos } = shot.rig;
+  const away = horizontal(viewDir(shot)).normalize().multiplyScalar(-1);
+  const horizontalDistance = horizontal(viewDir(shot)).length();
+  const rise = direction > 0 ? Math.min(3.2, 8 - pos.y) : -Math.min(3.2, pos.y - 0.6);
+  const reach = direction > 0 ? 2 : -Math.min(2, horizontalDistance - 2.2);
+  if (Math.abs(rise) < 0.05) {
+    notify(direction > 0 ? 'A grua não estica mais. O sindicato dos braços mecânicos agradece.' : 'Crane no chão já. Daqui pra baixo é escavação.');
+    return null;
+  }
+  return gsap.timeline()
+    .to(pos, { y: pos.y + rise, duration: seconds, ease: MOVE_EASE })
+    .to(pos, { x: pos.x + away.x * reach, z: pos.z + away.z * reach, duration: seconds, ease: direction > 0 ? 'sine.out' : 'sine.in' }, '<');
+}
+
+function tracking(shot, seconds) {
+  const step = hero.position.x > 1.5 ? -4 : 4;
+  const turnTime = seconds * 0.12;
+  return gsap.timeline()
+    .to(hero.rotation, { y: Math.sign(step) * Math.PI / 2, duration: turnTime, ease: 'power1.out' })
+    .to(hero.position, { x: `+=${step}`, duration: seconds, ease: 'none' })
+    .to([shot.rig.pos, shot.rig.target], { x: `+=${step}`, duration: seconds, ease: 'none' }, '<')
+    .to(hero.rotation, { y: 0, duration: turnTime, ease: 'power1.inOut' });
+}
+
+const MOVES = {
+  dollyIn: {
+    label: 'Dolly in', term: 'dolly', run: (s, d) => dolly(s, 1, d),
+    notes: ['a câmera anda até o herói. a lente não muda.'],
+    code: 'gsap.to(camera.position, { z: 4, duration: 2.2, ease: "power2.inOut" })\ncamera.lookAt(target)',
+  },
+  dollyOut: {
+    label: 'Dolly out', term: 'dolly', run: (s, d) => dolly(s, -1, d),
+    notes: ['a câmera recua. o herói encolhe, o mundo aparece.'],
+    code: 'gsap.to(camera.position, { z: 10, duration: 2.2, ease: "power2.inOut" })\ncamera.lookAt(target)',
+  },
+  truckLeft: {
+    label: 'Truck ←', term: 'truck', run: (s, d) => truck(s, -1, d),
+    notes: ['câmera e alvo andam juntos: a direção do olhar não muda.'],
+    code: 'gsap.to([camera.position, target], { x: "-=2.5", duration: 2.2, ease: "power2.inOut" })',
+  },
+  truckRight: {
+    label: 'Truck →', term: 'truck', run: (s, d) => truck(s, 1, d),
+    notes: ['câmera e alvo andam juntos: a direção do olhar não muda.'],
+    code: 'gsap.to([camera.position, target], { x: "+=2.5", duration: 2.2, ease: "power2.inOut" })',
+  },
+  pedestalUp: {
+    label: 'Pedestal ↑', term: 'pedestal', run: (s, d) => pedestal(s, 1, d),
+    notes: ['sobe reto. sem inclinar a cabeça.'],
+    code: 'gsap.to([camera.position, target], { y: "+=1.5", duration: 2.2, ease: "power2.inOut" })',
+  },
+  pedestalDown: {
+    label: 'Pedestal ↓', term: 'pedestal', run: (s, d) => pedestal(s, -1, d),
+    notes: ['desce reto. sem inclinar a cabeça.'],
+    code: 'gsap.to([camera.position, target], { y: "-=1.2", duration: 2.2, ease: "power2.inOut" })',
+  },
+  panLeft: {
+    label: 'Pan ←', term: 'pan', run: (s, d) => pan(s, -1, d),
+    notes: ['YXZ: gira no Y antes de inclinar no X, senão o pan entorta.', 'position parada. só a cabeça gira.'],
+    code: 'camera.rotation.order = "YXZ"\ngsap.to(camera.rotation, { y: "+=0.34", duration: 2.2, ease: "power2.inOut" })',
+  },
+  panRight: {
+    label: 'Pan →', term: 'pan', run: (s, d) => pan(s, 1, d),
+    notes: ['YXZ: gira no Y antes de inclinar no X, senão o pan entorta.', 'position parada. só a cabeça gira.'],
+    code: 'camera.rotation.order = "YXZ"\ngsap.to(camera.rotation, { y: "-=0.34", duration: 2.2, ease: "power2.inOut" })',
+  },
+  tiltUp: {
+    label: 'Tilt ↑', term: 'tilt', run: (s, d) => tilt(s, 1, d),
+    notes: ['position parada. a cabeça inclina pra cima.'],
+    code: 'camera.rotation.order = "YXZ"\ngsap.to(camera.rotation, { x: "+=0.3", duration: 2.2, ease: "power2.inOut" })',
+  },
+  tiltDown: {
+    label: 'Tilt ↓', term: 'tilt', run: (s, d) => tilt(s, -1, d),
+    notes: ['position parada. a cabeça inclina pra baixo.'],
+    code: 'camera.rotation.order = "YXZ"\ngsap.to(camera.rotation, { x: "-=0.3", duration: 2.2, ease: "power2.inOut" })',
+  },
+  orbitLeft: {
+    label: 'Orbit ⟲', term: 'orbit', run: (s, d) => orbitAround(s, -1, d),
+    notes: ['a câmera anda num círculo de raio 7 e nunca tira o olho do herói.'],
+    code: 'const arc = { angle: 0 }\ngsap.to(arc, {\n  angle: -Math.PI / 2, duration: 2.9, ease: "power2.inOut",\n  onUpdate: () => {\n    camera.position.set(Math.sin(arc.angle) * 7, 1.6, Math.cos(arc.angle) * 7)\n    camera.lookAt(hero.position)\n  },\n})',
+  },
+  orbitRight: {
+    label: 'Orbit ⟳', term: 'orbit', run: (s, d) => orbitAround(s, 1, d),
+    notes: ['a câmera anda num círculo de raio 7 e nunca tira o olho do herói.'],
+    code: 'const arc = { angle: 0 }\ngsap.to(arc, {\n  angle: Math.PI / 2, duration: 2.9, ease: "power2.inOut",\n  onUpdate: () => {\n    camera.position.set(Math.sin(arc.angle) * 7, 1.6, Math.cos(arc.angle) * 7)\n    camera.lookAt(hero.position)\n  },\n})',
+  },
+  craneUp: {
+    label: 'Crane ↑', term: 'crane', run: (s, d) => crane(s, 1, d),
+    notes: ['dois tweens juntos ("<") com eases diferentes = arco de grua.'],
+    code: 'gsap.timeline({ onUpdate: () => camera.lookAt(target) })\n  .to(camera.position, { y: 4.8, duration: 2.2, ease: "power2.inOut" })\n  .to(camera.position, { z: 9, duration: 2.2, ease: "sine.out" }, "<")',
+  },
+  craneDown: {
+    label: 'Crane ↓', term: 'crane', run: (s, d) => crane(s, -1, d),
+    notes: ['o mesmo arco ao contrário: desce e se aproxima.'],
+    code: 'gsap.timeline({ onUpdate: () => camera.lookAt(target) })\n  .to(camera.position, { y: 1.6, duration: 2.2, ease: "power2.inOut" })\n  .to(camera.position, { z: 7, duration: 2.2, ease: "sine.in" }, "<")',
+  },
+  tracking: {
+    label: 'Tracking', term: 'tracking', run: (s, d) => tracking(s, d * 1.6),
+    notes: ['ease "none": câmera e herói no mesmo passo, sem acelerar.'],
+    code: 'gsap.timeline({ defaults: { duration: 3.5, ease: "none" } })\n  .to(hero.position, { x: "+=4" })\n  .to([camera.position, target], { x: "+=4" }, "<")',
+  },
+};
+
+const COMPARE_PAN_TRUCK = {
+  label: 'Pan × Truck',
+  notes: ['A gira, B anda. o herói termina no MESMO lugar do quadro nos dois.', 'olhe os pilares do fundo e os caixotes da frente.'],
+  code: '// CAM A · pan\ngsap.to(camA.rotation, { y: "-=0.34" })\n\n// CAM B · truck\ngsap.to([camB.position, targetB], { x: "+=2.5" })',
+};
+
+const escapeHtml = text => text.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function highlightCode(code) {
+  return code.split('\n').map(line => {
+    const commentStart = line.indexOf('//');
+    const source = commentStart >= 0 ? line.slice(0, commentStart) : line;
+    const comment = commentStart >= 0 ? line.slice(commentStart) : '';
+    const tokens = escapeHtml(source).replace(
+      /(&quot;.*?&quot;)|\b(\d+(?:\.\d+)?)\b|\b(const|let|new|Math)\b|\b(position|rotation|fov|lookAt|order)\b/g,
+      (match, str, num, kw, prop) => {
+        if (str) return `<span class="tk-str">${str}</span>`;
+        if (num) return `<span class="tk-num">${num}</span>`;
+        if (kw) return `<span class="tk-kw">${kw}</span>`;
+        return `<span class="tk-prop">${prop}</span>`;
+      },
+    );
+    return tokens + (comment ? `<span class="tk-com">${escapeHtml(comment)}</span>` : '');
+  }).join('\n');
+}
+
+function showCode(entry) {
+  if (!entry) {
+    $('code-title').textContent = 'escolha um movimento';
+    $('code-body').innerHTML = `<span class="tk-com">${escapeHtml('// aperte um botão de movimento e o código aparece aqui')}</span>`;
+    return;
+  }
+  $('code-title').textContent = entry.label;
+  const noteLines = entry.notes.map(note => `// ${note}`).join('\n');
+  $('code-body').innerHTML = highlightCode(`${noteLines}\n${entry.code}`);
+}
+
+const READOUT_KEYS = ['px', 'py', 'pz', 'rx', 'ry', 'rz', 'fov'];
+const READOUT_NAMES = { px: 'position.x', py: 'position.y', pz: 'position.z', rx: 'rotation.x', ry: 'rotation.y', rz: 'rotation.z', fov: 'fov' };
+
+function readCamera(cam) {
+  return { px: cam.position.x, py: cam.position.y, pz: cam.position.z, rx: cam.rotation.x, ry: cam.rotation.y, rz: cam.rotation.z, fov: cam.fov };
+}
+
+const visibleShots = () => (state.compare ? [camA, camB] : [camA]);
+
+function buildReadout() {
+  const multi = state.compare;
+  $('readout').innerHTML = visibleShots().map(shot => {
+    const id = shot.name;
+    const tag = multi ? `<span class="cam-tag ${id.toLowerCase()}">Cam ${id}</span>` : '';
+    return `${tag}
+      <span class="prop">camera.position</span><span class="val" data-k="${id}-px"></span><span class="val" data-k="${id}-py"></span><span class="val" data-k="${id}-pz"></span>
+      <span class="prop">camera.rotation</span><span class="val" data-k="${id}-rx"></span><span class="val" data-k="${id}-ry"></span><span class="val" data-k="${id}-rz"></span>
+      <span class="prop">camera.fov</span><span class="val" data-k="${id}-fov"></span><span></span><span></span>`;
+  }).join('');
+}
+
+function snapshotBaseline() {
+  visibleShots().forEach(syncShot);
+  state.baseline = Object.fromEntries(visibleShots().map(shot => [shot.name, readCamera(shot.cam)]));
+}
+
+let lastChangedText = '';
+function updateReadout() {
+  const changed = new Set();
+  for (const shot of visibleShots()) {
+    const now = readCamera(shot.cam);
+    const base = state.baseline?.[shot.name];
+    for (const key of READOUT_KEYS) {
+      const cell = $('readout').querySelector(`[data-k="${shot.name}-${key}"]`);
+      if (!cell) continue;
+      const text = key === 'fov' ? `${now.fov.toFixed(1)}° (${FOCAL_MM}mm)` : now[key].toFixed(2);
+      if (cell.textContent !== text) cell.textContent = text;
+      const isChanged = base && Math.abs(now[key] - base[key]) > 0.01;
+      cell.classList.toggle('changed', Boolean(isChanged));
+      if (isChanged) changed.add(READOUT_NAMES[key]);
+    }
+  }
+  const text = changed.size ? [...changed].join(' · ') : (state.baseline ? 'nada (ainda)' : 'nada ainda');
+  if (text !== lastChangedText) {
+    $('changed-chip').innerHTML = `mudou → <b>${text}</b>`;
+    lastChangedText = text;
+  }
+}
+
+let toastTimer = 0;
+function notify(message) {
+  const toast = $('toast');
+  toast.textContent = message;
+  toast.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toast.hidden = true; }, 3200);
+}
+
+function killShotMotion(shot) {
+  shot.active?.kill();
+  shot.active = null;
+}
+
+function runMove(key) {
+  const move = MOVES[key];
+  if (state.compare) setCompare(false);
+  if (state.challengeActive) exitChallenge();
+  killShotMotion(camA);
+  snapshotBaseline();
+  const tween = move.run(camA, dur(2.2));
+  showCode(move);
+  if (!tween) return;
+  camA.active = tween;
+  state.tags.A = move.label;
+  refreshFrameLabels();
+  progress.takes += 1;
+  markSeen(move.term);
+}
+
+function runPanTruckComparison() {
+  if (state.challengeActive) exitChallenge();
+  setCompare(true);
+  [camA, camB].forEach(shot => {
+    killShotMotion(shot);
+    shot.rig.pos.copy(HOME.pos);
+    shot.rig.target.copy(HOME.target);
+  });
+  hero.position.set(0, 0, 0);
+  hero.rotation.set(0, 0, 0);
+  snapshotBaseline();
+  const lateral = 2.5;
+  const matchingAngle = Math.atan2(lateral, HOME.pos.z - HOME.target.z);
+  camA.active = gsap.to({}, { duration: dur(0.6), onComplete: () => { camA.active = pan(camA, 1, dur(2.6), matchingAngle); } });
+  camB.active = gsap.to({}, { duration: dur(0.6), onComplete: () => { camB.active = truck(camB, 1, dur(2.6), lateral); } });
+  state.tags.A = 'pan →';
+  state.tags.B = 'truck →';
+  refreshFrameLabels();
+  showCode(COMPARE_PAN_TRUCK);
+  progress.takes += 1;
+  progress.m1.compared = true;
+  markSeen('pan', false);
+  markSeen('truck');
+}
+
+function setCompare(on) {
+  state.compare = on;
+  setShotVisible(camB, on);
+  if (!on) state.tags.B = '';
+  buildReadout();
+  relayout();
+}
+
+function setSetView(on) {
+  state.setView = on;
+  orbit.enabled = on;
+  $('btn-setview').setAttribute('aria-pressed', String(on));
+  relayout();
+}
+
+function setMotion(on) {
+  state.motion = on;
+  storage.write(MOTION_KEY, on);
+  $('btn-motion').setAttribute('aria-pressed', String(on));
+  $('btn-motion').textContent = on ? 'Animar' : 'Instantâneo';
+  $('btn-motion').title = on ? 'Animações ligadas. Clique para resultado instantâneo.' : 'Modo instantâneo (prefers-reduced-motion). Clique para animar.';
+}
+
+function resetScene({ countAsReset = true } = {}) {
+  [camA, camB].forEach(shot => {
+    killShotMotion(shot);
+    shot.rig.pos.copy(HOME.pos);
+    shot.rig.target.copy(HOME.target);
+  });
+  gsap.killTweensOf([hero.position, hero.rotation]);
+  hero.position.set(0, 0, 0);
+  hero.rotation.set(0, 0, 0);
+  setCam.position.copy(SET_CAM_HOME.pos);
+  orbit.target.copy(SET_CAM_HOME.target);
+  orbit.update();
+  state.tags = { A: '', B: '' };
+  if (state.compare) setCompare(false);
+  if (state.challengeActive) exitChallenge();
+  state.baseline = null;
+  showCode(null);
+  refreshFrameLabels();
+  if (countAsReset) {
+    progress.resets += 1;
+    saveProgress();
+    checkAchievements();
+  }
+}
+
+const stage = $('stage');
+const frames = { set: $('frame-set'), A: $('frame-a'), B: $('frame-b') };
+let stageSize = { w: 1, h: 1 };
+let views = [];
+
+function fitAspect(x, y, w, h, aspect) {
+  let width = w;
+  let height = w / aspect;
+  if (height > h) {
+    height = h;
+    width = h * aspect;
+  }
+  return { x: x + (w - width) / 2, y: y + (h - height) / 2, w: width, h: height };
+}
+
+function computeViews(w, h) {
+  const shots = visibleShots();
+  if (state.setView) {
+    const margin = 10;
+    const insetW = Math.min(w * (state.compare ? 0.42 : 0.4), state.compare ? 300 : 360);
+    const insetH = insetW / MONITOR_ASPECT;
+    return [
+      { kind: 'set', cam: setCam, rect: { x: 0, y: 0, w, h } },
+      ...shots.map((shot, i) => ({
+        kind: 'shot', shot,
+        rect: { x: state.compare && i === 0 ? margin : w - insetW - margin, y: h - insetH - margin, w: insetW, h: insetH },
+      })),
+    ];
+  }
+  if (state.compare) {
+    const gap = 6;
+    const half = (w - gap) / 2;
+    return [
+      { kind: 'shot', shot: camA, rect: fitAspect(0, 0, half, h, MONITOR_ASPECT) },
+      { kind: 'shot', shot: camB, rect: fitAspect(half + gap, 0, half, h, MONITOR_ASPECT) },
+    ];
+  }
+  return [{ kind: 'shot', shot: camA, rect: fitAspect(0, 0, w, h, MONITOR_ASPECT) }];
+}
+
+function placeFrame(el, rect) {
+  el.hidden = false;
+  Object.assign(el.style, { left: `${rect.x}px`, top: `${rect.y}px`, width: `${rect.w}px`, height: `${rect.h}px` });
+}
+
+function relayout() {
+  const { w, h } = stageSize;
+  views = computeViews(w, h);
+  setCam.aspect = w / h;
+  setCam.updateProjectionMatrix();
+  Object.values(frames).forEach(el => { el.hidden = true; });
+  for (const view of views) {
+    if (view.kind === 'set') {
+      placeFrame(frames.set, view.rect);
+      continue;
+    }
+    const el = frames[view.shot.name];
+    placeFrame(el, view.rect);
+    el.classList.toggle('fullscreen', !state.setView && !state.compare);
+  }
+  refreshFrameLabels();
+}
+
+function refreshFrameLabels() {
+  ['A', 'B'].forEach(name => {
+    const tag = state.tags[name] ? ` · ${state.tags[name]}` : '';
+    frames[name].querySelector('.txt').textContent = `Cam ${name} · ${FOCAL_MM}mm${tag}`;
+  });
+  const mode = state.setView ? 'Visão de set' : 'Monitor';
+  $('sandbox-title').innerHTML = `Sandbox · <b>${mode}</b> · Cam A ${FOCAL_MM}mm`;
+}
+
+new ResizeObserver(() => {
+  const rect = stage.getBoundingClientRect();
+  stageSize = { w: Math.max(1, Math.round(rect.width)), h: Math.max(1, Math.round(rect.height)) };
+  renderer.setSize(stageSize.w, stageSize.h, false);
+  relayout();
+}).observe(stage);
+
+function measureHeroFraming(shot) {
+  syncShot(shot);
+  const top = hero.position.clone().setY(HERO_TOP).project(shot.cam);
+  const feet = hero.position.clone().setY(0).project(shot.cam);
+  return {
+    share: (top.y - feet.y) / 2,
+    headInFrame: top.y <= 0.98 && Math.abs(top.x) <= 1,
+    centered: Math.abs(top.x) < 0.4,
+  };
+}
+
+function updateChallengeHud() {
+  const hud = frames.A.querySelector('.frame-hud');
+  if (!state.challengeActive) {
+    hud.hidden = true;
+    return;
+  }
+  const framing = measureHeroFraming(camA);
+  hud.hidden = false;
+  const headNote = framing.headInFrame ? 'cabeça ok' : 'cabeça cortada';
+  hud.textContent = `herói: ${Math.round(framing.share * 100)}% da altura · ${headNote}`;
+}
+
+const clock = new THREE.Clock();
+let lastHeroX = 0;
+renderer.setAnimationLoop(() => {
+  const elapsed = clock.getElapsedTime();
+  const heroSpeed = Math.abs(hero.position.x - lastHeroX);
+  lastHeroX = hero.position.x;
+  heroModel.position.y = heroSpeed > 0.0005 ? Math.abs(Math.sin(elapsed * 11)) * 0.06 : 0;
+
+  visibleShots().forEach(syncShot);
+  if (state.setView) orbit.update();
+
+  const { w, h } = stageSize;
+  renderer.setViewport(0, 0, w, h);
+  renderer.setScissor(0, 0, w, h);
+  renderer.setClearColor(COLOR.letterbox);
+  renderer.clear();
+  for (const view of views) {
+    const { x, y, w: vw, h: vh } = view.rect;
+    const glY = h - y - vh;
+    renderer.setViewport(x, glY, vw, vh);
+    renderer.setScissor(x, glY, vw, vh);
+    renderer.render(scene, view.kind === 'set' ? setCam : view.shot.cam);
+  }
+  updateReadout();
+  updateChallengeHud();
+});
+
+function enterChallenge() {
+  if (state.compare) setCompare(false);
+  killShotMotion(camA);
+  gsap.killTweensOf([hero.position, hero.rotation]);
+  hero.position.set(0, 0, 0);
+  hero.rotation.set(0, 0, 0);
+  state.challengeActive = true;
+  state.panelTab = 'challenge';
+  state.tags.A = 'desafio';
+  camA.rig.target.copy(HOME.target);
+  camA.active = gsap.to(camA.rig.pos, { x: 0, y: HOME.pos.y, z: CHALLENGE_START_Z, duration: dur(0.6), ease: 'power1.inOut' });
+  state.baseline = null;
+  renderControls();
+  refreshFrameLabels();
+  showChallengeCode();
+}
+
+function exitChallenge() {
+  state.challengeActive = false;
+  state.tags.A = '';
+  if (state.panelTab === 'challenge') {
+    state.panelTab = 'moves';
+    renderControls();
+  }
+}
+
+function readChallengeInputs() {
+  return {
+    distance: Number($('ch-dist').value),
+    duration: Number($('ch-dur').value),
+    ease: $('ch-ease').value,
+  };
+}
+
+function showChallengeCode() {
+  if (!$('ch-dist')) return;
+  const { distance, duration, ease } = readChallengeInputs();
+  showCode({
+    label: 'Desafio · push-in',
+    notes: ['sua versão. mexa nos controles e o código acompanha.'],
+    code: `camera.position.set(0, 1.6, ${CHALLENGE_START_Z})\ngsap.to(camera.position, { z: ${distance.toFixed(1)}, duration: ${duration}, ease: "${ease}" })\ncamera.lookAt(target)`,
+  });
+}
+
+function runChallenge() {
+  const { distance, duration, ease } = readChallengeInputs();
+  killShotMotion(camA);
+  camA.rig.pos.set(0, HOME.pos.y, CHALLENGE_START_Z);
+  camA.rig.target.copy(HOME.target);
+  snapshotBaseline();
+  showChallengeCode();
+  $('ch-result').className = 'ch-result';
+  $('ch-result').textContent = state.motion ? 'Rodando... 🎬' : 'Modo instantâneo: avaliando pela duração que você escolheu.';
+  progress.takes += 1;
+  camA.active = gsap.to(camA.rig.pos, {
+    z: distance,
+    duration: dur(duration),
+    ease,
+    onComplete: () => judgeChallenge(duration, ease),
+  });
+}
+
+function judgeChallenge(duration, ease) {
+  const framing = measureHeroFraming(camA);
+  const percent = Math.round(framing.share * 100);
+  const problems = [];
+  if (duration < 3) problems.push(`Rápido demais: ${duration}s é push-in de quem tomou três cafés. Lento aqui é 3s ou mais.`);
+  if (!framing.headInFrame) problems.push('Perto demais: a cabeça do herói saiu do quadro. Ficou sem testa, coitado.');
+  else if (framing.share < 0.5) problems.push(`Ainda longe: o herói ocupa ${percent}% da altura do quadro. Precisa de pelo menos 50%.`);
+  const result = $('ch-result');
+  if (problems.length) {
+    result.className = 'ch-result bad';
+    result.textContent = `Corta! ${problems.join(' ')}`;
+    return;
+  }
+  const easeNote = ease === 'none'
+    ? ' Dica de bônus: com ease "none" ele começa e para de supetão. No Módulo 5 a gente resolve isso.'
+    : '';
+  result.className = 'ch-result ok';
+  result.textContent = `Valeu, é take! Push-in de ${duration}s, herói em ${percent}% do quadro.${easeNote}`;
+  if (!progress.m1.challenge) {
+    progress.m1.challenge = true;
+    saveProgress();
+    renderProgressBits();
+    checkAchievements();
+  }
+}
+
+function markSeen(termId, rerender = true) {
+  if (!progress.m1.seen.includes(termId)) progress.m1.seen.push(termId);
+  saveProgress();
+  if (rerender) {
+    refreshTermStatuses();
+    renderProgressBits();
+    checkAchievements();
+  }
+}
+
+function quizStatus() {
+  const answered = QUIZ_M1.filter(q => progress.m1.quiz[q.id] !== undefined);
+  const correct = answered.filter(q => progress.m1.quiz[q.id] === q.answer).length;
+  return { answered: answered.length, correct, passed: answered.length === QUIZ_M1.length && correct >= 2 };
+}
+
+function moduleOneStatus() {
+  const m = progress.m1;
+  const covered = TERMS_M1.filter(t => m.known.includes(t.id) || m.seen.includes(t.id)).length;
+  const quiz = quizStatus();
+  const done = covered + Number(m.compared) + Number(quiz.passed) + Number(m.challenge);
+  const total = TERMS_M1.length + 3;
+  return { covered, quiz, percent: Math.round((done / total) * 100), complete: done === total };
+}
+
+function checkAchievements() {
+  if (moduleOneStatus().complete) unlock('m1');
+  if (progress.resets >= 10) unlock('stagehand');
+}
+
+function unlock(id) {
+  if (progress.achievements.includes(id)) return;
+  progress.achievements.push(id);
+  saveProgress();
+  const achievement = ACHIEVEMENTS.find(a => a.id === id);
+  renderShelf();
+  renderProgressBits();
+  showAchievementModal(achievement);
+}
+
+function showAchievementModal(achievement) {
+  const root = $('modal-root');
+  root.innerHTML = `
+    <div class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal ${state.motion ? 'pop' : ''}">
+        <div class="slate-stripes"></div>
+        <div class="modal-body">
+          <div class="ico" aria-hidden="true">${achievement.icon}</div>
+          <div class="kicker">Achievement desbloqueado</div>
+          <h2 id="modal-title">${achievement.name}</h2>
+          <p>${achievement.desc}</p>
+          <button class="btn primary" id="modal-close">Valeu! Próxima cena</button>
+        </div>
+      </div>
+    </div>`;
+  const close = () => { root.innerHTML = ''; };
+  $('modal-close').addEventListener('click', close);
+  $('modal-close').focus();
+  root.querySelector('.modal-backdrop').addEventListener('click', e => { if (e.target === e.currentTarget) close(); });
+}
+
+function renderNav() {
+  const percentOne = moduleOneStatus().percent;
+  $('module-nav').innerHTML = MODULES.map(m => {
+    const percent = m.id === 1 ? percentOne : 0;
+    return `<button class="mod-btn ${m.ready ? '' : 'locked'}" data-module="${m.id}" aria-current="${state.module === m.id}">
+      <span class="num">CENA 0${m.id}</span><span class="t">${m.title}</span><span class="bar"><i style="width:${percent}%"></i></span>
+    </button>`;
+  }).join('');
+}
+
+function renderShelf() {
+  const unlocked = progress.achievements;
+  $('shelf').innerHTML = ACHIEVEMENTS.filter(a => !a.secret || unlocked.includes(a.id)).map(a => {
+    const has = unlocked.includes(a.id);
+    return `<div class="badge ${has ? '' : 'locked'}"><span class="ico" aria-hidden="true">${a.icon}</span><span><div class="name">${a.name}</div><div class="desc">${has ? a.desc : a.module ? `Cena 0${a.module}` : ''}</div></span></div>`;
+  }).join('');
+  $('trophy-count').textContent = `${unlocked.length}/${ACHIEVEMENTS.length}`;
+}
+
+function renderProgressBits() {
+  const status = moduleOneStatus();
+  const overall = Math.round(status.percent / MODULES.length);
+  $('overall-label').textContent = `curso ${overall}%`;
+  renderNav();
+  const take = $('slate-take');
+  if (take) take.textContent = String(progress.takes).padStart(2, '0');
+  const checklist = $('award-checklist');
+  if (checklist) checklist.innerHTML = awardChecklistItems(status);
+  const award = $('award');
+  if (award) {
+    const unlocked = progress.achievements.includes('m1');
+    award.classList.toggle('unlocked', unlocked);
+    $('award-state').textContent = unlocked ? 'Desbloqueado' : `${status.percent}% da cena filmada`;
+  }
+  const chStatus = $('challenge-status');
+  if (chStatus) chStatus.textContent = progress.m1.challenge ? '● Desafio concluído' : '○ Ainda não filmado';
+}
+
+function awardChecklistItems(status) {
+  const item = (done, text) => `<li class="${done ? 'done' : ''}">${text}</li>`;
+  return [
+    item(status.covered === TERMS_M1.length, `Termos vistos ou já conhecidos: ${status.covered}/${TERMS_M1.length}`),
+    item(progress.m1.compared, 'Pan × truck lado a lado'),
+    item(status.quiz.passed, `Checagem: ${status.quiz.correct}/${QUIZ_M1.length} (precisa de 2)`),
+    item(progress.m1.challenge, 'Mini-desafio do push-in'),
+  ].join('');
+}
+
+function slate(scene, title) {
+  return `<div class="slate">
+    <div class="slate-stripes"></div>
+    <div class="slate-grid">
+      <div><span>Prod.</span><b>Cine p/ Web</b></div>
+      <div><span>Cena</span><b>0${scene}</b></div>
+      <div><span>Assunto</span><b>${title}</b></div>
+      <div><span>Take</span><b id="slate-take">${String(progress.takes).padStart(2, '0')}</b></div>
+    </div>
+  </div>`;
+}
+
+function termCard(term) {
+  const known = progress.m1.known.includes(term.id);
+  return `<article class="term ${known ? 'is-known' : ''}" id="term-${term.id}" data-term="${term.id}">
+    <header class="term-head">
+      <h3>${term.name}</h3><span class="aka">${term.aka}</span><span class="term-status"></span>
+    </header>
+    <div class="term-body">
+      <p class="analogy">${term.analogy}</p>
+      <p class="definition"><b>Em uma frase:</b> ${term.definition}</p>
+      <button class="link-btn reopen" data-action="reopen" data-term="${term.id}">Rever mesmo assim</button>
+      <div class="demo-row">${term.demos.map(([key, label]) => `<button class="btn" data-move="${key}">▶ ${label}</button>`).join('')}</div>
+      <details class="more">
+        <summary>Detalhes</summary>
+        <dl>
+          <dt>Na tela</dt><dd>${term.screen}</dd>
+          <dt>No código</dt><dd>${term.code}</dd>
+        </dl>
+      </details>
+      <button class="link-btn" data-action="alt" data-term="${term.id}">Não colou? Tenta de outro jeito</button>
+      <p class="alt" id="alt-${term.id}" hidden>${term.alt}</p>
+    </div>
+  </article>`;
+}
+
+function refreshTermStatuses() {
+  TERMS_M1.forEach(term => {
+    const card = $(`term-${term.id}`);
+    if (!card) return;
+    const known = progress.m1.known.includes(term.id);
+    const seen = progress.m1.seen.includes(term.id);
+    card.classList.toggle('is-known', known);
+    const status = card.querySelector('.term-status');
+    status.textContent = seen ? '● filmado' : known ? 'já conhecia' : '';
+    status.classList.toggle('known', known && !seen);
+  });
+}
+
+const DIAGRAM_SVG = `
+<svg class="diagram" viewBox="0 0 640 210" role="img" aria-label="Vista de cima: no truck a câmera anda de lado e o olhar continua paralelo; no pan a câmera fica no lugar e o olhar gira.">
+  <g>
+    <text class="lbl" x="20" y="24">TRUCK · a câmera anda</text>
+    <circle cx="70" cy="56" r="7" fill="#5c6573"/><circle cx="200" cy="48" r="7" fill="#5c6573"/><circle cx="262" cy="62" r="7" fill="#5c6573"/>
+    <text x="214" y="30">fundo</text>
+    <circle cx="150" cy="100" r="11" fill="#f0a640"/>
+    <text x="166" y="104">herói</text>
+    <polygon points="115,170 72,96 158,96" fill="#f0a640" fill-opacity="0.08" stroke="#f0a640" stroke-opacity="0.35"/>
+    <polygon points="185,170 142,96 228,96" fill="#f0a640" fill-opacity="0.18" stroke="#f0a640" stroke-opacity="0.8"/>
+    <rect x="104" y="168" width="22" height="16" rx="2" fill="#2a2f38" stroke="#f0a640" stroke-opacity="0.5"/>
+    <rect x="174" y="168" width="22" height="16" rx="2" fill="#2a2f38" stroke="#f0a640"/>
+    <path d="M130 194 L170 194" stroke="#ece7dd" stroke-width="1.5"/><path d="M164 189 L171 194 L164 199" fill="none" stroke="#ece7dd" stroke-width="1.5"/>
+    <text x="70" y="204">posição muda, direção igual</text>
+  </g>
+  <line x1="320" y1="16" x2="320" y2="196" stroke="#2c323d"/>
+  <g>
+    <text class="lbl" x="340" y="24">PAN · a câmera gira</text>
+    <circle cx="410" cy="56" r="7" fill="#5c6573"/><circle cx="540" cy="48" r="7" fill="#5c6573"/><circle cx="602" cy="62" r="7" fill="#5c6573"/>
+    <circle cx="490" cy="100" r="11" fill="#86b8ff"/>
+    <polygon points="490,170 447,96 533,96" fill="#86b8ff" fill-opacity="0.08" stroke="#86b8ff" stroke-opacity="0.35"/>
+    <polygon points="490,170 482,85 563,121" fill="#86b8ff" fill-opacity="0.18" stroke="#86b8ff" stroke-opacity="0.8"/>
+    <rect x="479" y="168" width="22" height="16" rx="2" fill="#2a2f38" stroke="#86b8ff"/>
+    <path d="M466 160 A 30 30 0 0 1 510 150" fill="none" stroke="#ece7dd" stroke-width="1.5"/><path d="M503 146 L511 150 L505 157" fill="none" stroke="#ece7dd" stroke-width="1.5"/>
+    <text x="400" y="204">posição igual, direção muda</text>
+  </g>
+</svg>`;
+
+function quizMarkup() {
+  const status = quizStatus();
+  const questions = QUIZ_M1.map((q, qi) => {
+    const chosen = progress.m1.quiz[q.id];
+    const answered = chosen !== undefined;
+    const options = q.options.map((opt, oi) => {
+      let cls = '';
+      if (answered && oi === q.answer) cls = 'right';
+      else if (answered && oi === chosen) cls = 'wrong';
+      return `<button class="opt ${cls}" data-quiz="${q.id}" data-opt="${oi}" ${answered ? 'disabled' : ''}>${escapeHtml(opt)}</button>`;
+    }).join('');
+    const feedback = answered
+      ? `<p class="q-feedback ${chosen === q.answer ? 'right' : 'wrong'}"><b>${chosen === q.answer ? 'Isso!' : 'Quase.'}</b> ${q.why[chosen]}${chosen === q.answer ? '' : ` A resposta é <b>${escapeHtml(q.options[q.answer])}</b>: ${q.why[q.answer]}`}</p>`
+      : '';
+    return `<fieldset class="q"><legend>${qi + 1}. ${escapeHtml(q.text)}</legend><div class="opts">${options}</div>${feedback}</fieldset>`;
+  }).join('');
+  const foot = status.answered === QUIZ_M1.length
+    ? `<div class="quiz-foot"><span>${status.correct}/${QUIZ_M1.length} ${status.passed ? '· passou ✔' : '· precisa de 2'}</span><button class="btn" data-action="quiz-retry">Refazer</button></div>`
+    : '';
+  return questions + foot;
+}
+
+function renderModuleOne() {
+  const knownSet = new Set(progress.m1.known);
+  const cheatRows = TERMS_M1.map(t => `<tr><td>${t.name}</td><td>${t.short}</td><td>${t.screen}</td><td>${escapeHtml(t.code)}</td></tr>`).join('');
+  $('module-content').innerHTML = `
+    <div class="hero-title">
+      ${slate(1, 'Movimento')}
+      <h1>A câmera <em>se move</em></h1>
+      <p class="lede">Oito movimentos, uma ideia: ou a câmera <b>anda</b> (position), ou ela <b>gira a cabeça</b> (rotation). Quem separa os dois já fala a língua do set.</p>
+      <p class="lede-muted">O sandbox ao lado está em <b>visão de set</b>: a câmera laranja é a câmera da cena, a caixinha no canto é o que ela filma. Arraste a vista para girar o set.</p>
+    </div>
+
+    <section class="section" id="ask">
+      <span class="eyebrow">1 · Antes do primeiro take</span>
+      <h2>Quais você já conhece?</h2>
+      <p>Marque os que já são de casa. Eles ficam resumidos e contam como vistos. Spoiler: o OrbitControls já te apresentou uns dois.</p>
+      <div class="chips">${TERMS_M1.map(t => `<button class="chip" data-known="${t.id}" aria-pressed="${knownSet.has(t.id)}">${t.name}</button>`).join('')}</div>
+    </section>
+
+    <section class="section" id="terms">
+      <span class="eyebrow">2 · Os movimentos</span>
+      <h2>Analogia, frase, demo</h2>
+      <p>Cada termo começa com algo do mundo real. Aperte ▶ e veja no sandbox o que mudou no código.</p>
+      <div class="term-list">${TERMS_M1.map(termCard).join('')}</div>
+    </section>
+
+    <section class="section critical" id="critical">
+      <span class="eyebrow">3 · Ponto crítico</span>
+      <h2>Andar ≠ girar a cabeça</h2>
+      <p>Pan e truck "vão pro lado" e confundem todo mundo no começo. A diferença está no fundo: quem anda tem <b>paralaxe</b>, quem gira não tem.</p>
+      <div class="split-table">
+        <div class="pos"><h4>Mexe em position</h4><p>dolly, truck, pedestal, crane, tracking. A câmera sai do lugar. Perto e longe se movem em velocidades diferentes.</p></div>
+        <div class="rot"><h4>Mexe em rotation</h4><p>pan, tilt. A câmera fica no lugar e só aponta pra outro lado. Tudo desliza junto.</p></div>
+      </div>
+      ${DIAGRAM_SVG}
+      <p>O orbit é o híbrido: anda em círculo (position) e gira pra continuar mirando (rotation via lookAt).</p>
+      <div><button class="btn primary" data-action="compare">▶ Rodar pan × truck lado a lado</button></div>
+    </section>
+
+    <section class="section" id="cheat">
+      <span class="eyebrow">4 · Cola</span>
+      <h2>Tabela pra consultar</h2>
+      <div class="table-wrap"><table class="cheat">
+        <thead><tr><th>Termo</th><th>Analogia</th><th>O que muda na tela</th><th>O que mexer no código</th></tr></thead>
+        <tbody>${cheatRows}</tbody>
+      </table></div>
+    </section>
+
+    <section class="section" id="quiz">
+      <span class="eyebrow">5 · Checagem rápida</span>
+      <h2>Três perguntas</h2>
+      <div class="quiz" id="quiz-body">${quizMarkup()}</div>
+    </section>
+
+    <section class="section" id="challenge">
+      <span class="eyebrow">6 · Mini-desafio</span>
+      <h2>O push-in lento</h2>
+      <p>O diretor pediu: <i>"slow push-in, terminando enquadrado no herói"</i>. A câmera começa a ${CHALLENGE_START_Z}m dele. Você escolhe onde ela para, quanto tempo leva e o ease.</p>
+      <ul class="criteria">
+        <li>Lento: 3 segundos ou mais</li>
+        <li>No fim, a cabeça do herói inteira no quadro</li>
+        <li>O herói ocupando pelo menos metade da altura do quadro</li>
+      </ul>
+      <div class="challenge-actions">
+        <button class="btn primary" data-action="open-challenge">Abrir desafio no sandbox</button>
+        <span class="panel-note" id="challenge-status"></span>
+      </div>
+    </section>
+
+    <section class="section" id="achievement">
+      <span class="eyebrow">7 · Achievement</span>
+      <div class="award" id="award">
+        <div class="ico" aria-hidden="true">🛤️</div>
+        <div>
+          <h3>Habilitação de Dolly</h3>
+          <p id="award-state"></p>
+          <ul class="criteria" id="award-checklist"></ul>
+        </div>
+      </div>
+    </section>`;
+  refreshTermStatuses();
+  renderProgressBits();
+}
+
+function renderPlaceholderModule(module) {
+  const achievement = ACHIEVEMENTS.find(a => a.module === module.id);
+  $('module-content').innerHTML = `
+    <div class="hero-title">
+      ${slate(module.id, module.title)}
+      <h1>${module.title}</h1>
+      <p class="lede">Em pré-produção. Esta cena sai depois do seu feedback no Módulo 1, e o formato pode mudar com o que você disser.</p>
+    </div>
+    <section class="section">
+      <span class="eyebrow">No roteiro</span>
+      <h2>Termos que vêm aí</h2>
+      <div class="placeholder-terms">${module.terms.map(t => `<span class="chip static">${t}</span>`).join('')}</div>
+    </section>
+    <section class="section">
+      <span class="eyebrow">Achievement</span>
+      <div class="award"><div class="ico" aria-hidden="true">${achievement.icon}</div><div><h3>${achievement.name}</h3><p>Bloqueado até a cena ser filmada.</p></div></div>
+    </section>`;
+  renderProgressBits();
+}
+
+function renderControls() {
+  const panel = $('controls');
+  if (state.module !== 1) {
+    panel.innerHTML = `<p class="panel-note">Os controles da Cena 0${state.module} chegam junto com ela. Por enquanto o set é seu: arraste a visão de set à vontade.</p>`;
+    return;
+  }
+  const isChallenge = state.panelTab === 'challenge';
+  const moveButtons = Object.entries(MOVES).map(([key, move]) => `<button class="btn" data-move="${key}">${move.label}</button>`).join('');
+  panel.innerHTML = `
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="${!isChallenge}" data-tab="moves">Movimentos</button>
+      <button class="tab" role="tab" aria-selected="${isChallenge}" data-tab="challenge">Desafio</button>
+    </div>
+    ${isChallenge ? challengeFormMarkup() : `<div class="moves-grid">${moveButtons}<button class="btn wide" data-action="compare">Pan × Truck lado a lado</button></div>`}`;
+  if (isChallenge) showChallengeCode();
+}
+
+const challengeDraft = { distance: 7.5, duration: 1.5, ease: 'none' };
+const CHALLENGE_EASES = ['none', 'power1.inOut', 'power2.inOut', 'power3.out', 'sine.inOut', 'expo.out'];
+
+function challengeFormMarkup() {
+  return `
+    <div class="challenge-form">
+      <div class="field">
+        <label for="ch-dist">Para a <output id="ch-dist-out">${challengeDraft.distance.toFixed(1)} m</output></label>
+        <input type="range" id="ch-dist" min="1.5" max="9.5" step="0.1" value="${challengeDraft.distance}">
+      </div>
+      <div class="field">
+        <label for="ch-dur">Duração <output id="ch-dur-out">${challengeDraft.duration} s</output></label>
+        <input type="range" id="ch-dur" min="0.5" max="8" step="0.5" value="${challengeDraft.duration}">
+      </div>
+      <div class="field">
+        <label for="ch-ease">Ease</label>
+        <select id="ch-ease">${CHALLENGE_EASES.map(e => `<option value="${e}" ${e === challengeDraft.ease ? 'selected' : ''}>${e}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="challenge-actions">
+      <button class="btn primary" data-action="challenge-run">Ação! 🎬</button>
+      <button class="btn" data-action="open-challenge">Voltar pra marca</button>
+    </div>
+    <p class="ch-result" id="ch-result" aria-live="polite">${progress.m1.challenge ? 'Você já fechou esse desafio. Pode filmar de novo por esporte.' : 'Os valores iniciais estão errados de propósito. Ajuste e grite ação.'}</p>`;
+}
+
+function setModule(id) {
+  state.module = id;
+  const module = MODULES.find(m => m.id === id);
+  if (state.challengeActive) exitChallenge();
+  if (module.ready) renderModuleOne();
+  else renderPlaceholderModule(module);
+  renderControls();
+  window.scrollTo({ top: 0, behavior: state.motion ? 'smooth' : 'auto' });
+}
+
+document.addEventListener('click', event => {
+  const target = event.target.closest('button');
+  if (!target) return;
+
+  if (target.dataset.move) return runMove(target.dataset.move);
+  if (target.dataset.module) return setModule(Number(target.dataset.module));
+  if (target.dataset.tab) {
+    if (target.dataset.tab === 'challenge') return enterChallenge();
+    exitChallenge();
+    state.panelTab = 'moves';
+    return renderControls();
+  }
+  if (target.dataset.known) {
+    const id = target.dataset.known;
+    const known = progress.m1.known;
+    const index = known.indexOf(id);
+    if (index >= 0) known.splice(index, 1);
+    else known.push(id);
+    target.setAttribute('aria-pressed', String(index < 0));
+    saveProgress();
+    refreshTermStatuses();
+    renderProgressBits();
+    checkAchievements();
+    return;
+  }
+  if (target.dataset.quiz) {
+    progress.m1.quiz[target.dataset.quiz] = Number(target.dataset.opt);
+    saveProgress();
+    $('quiz-body').innerHTML = quizMarkup();
+    renderProgressBits();
+    checkAchievements();
+    return;
+  }
+
+  switch (target.dataset.action) {
+    case 'alt': {
+      const alt = $(`alt-${target.dataset.term}`);
+      alt.hidden = !alt.hidden;
+      break;
+    }
+    case 'reopen':
+      $(`term-${target.dataset.term}`).classList.add('expanded');
+      break;
+    case 'compare':
+      runPanTruckComparison();
+      break;
+    case 'quiz-retry':
+      progress.m1.quiz = {};
+      saveProgress();
+      $('quiz-body').innerHTML = quizMarkup();
+      renderProgressBits();
+      break;
+    case 'open-challenge':
+      enterChallenge();
+      break;
+    case 'challenge-run':
+      runChallenge();
+      break;
+  }
+});
+
+document.addEventListener('input', event => {
+  const id = event.target.id;
+  if (!id.startsWith('ch-')) return;
+  const { distance, duration, ease } = readChallengeInputs();
+  Object.assign(challengeDraft, { distance, duration, ease });
+  $('ch-dist-out').textContent = `${distance.toFixed(1)} m`;
+  $('ch-dur-out').textContent = `${duration} s`;
+  showChallengeCode();
+});
+
+$('btn-setview').addEventListener('click', () => setSetView(!state.setView));
+$('btn-motion').addEventListener('click', () => setMotion(!state.motion));
+$('btn-reset').addEventListener('click', () => resetScene());
+$('trophy-btn').addEventListener('click', () => {
+  const shelf = $('shelf');
+  shelf.hidden = !shelf.hidden;
+  $('trophy-btn').setAttribute('aria-expanded', String(!shelf.hidden));
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') $('modal-root').innerHTML = '';
+});
+
+setMotion(state.motion);
+setSetView(true);
+buildReadout();
+showCode(null);
+renderShelf();
+setModule(1);
+</script>
+</body>
+</html>
