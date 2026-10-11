@@ -1,5 +1,5 @@
 import { MODULES } from './modules/index.js';
-import { startSandbox, onReset, sandboxState } from './sandbox/stage.js';
+import { startSandbox, onFrame, onReset, onUserReset, resetScene, sandboxState } from './sandbox/stage.js';
 import { renderShelf, unlock, STAGEHAND } from './achievements.js';
 import { refreshSlateTake } from './course-ui.js';
 import { progress, saveProgress } from './progress.js';
@@ -10,7 +10,7 @@ const ACHIEVEMENTS = [
   STAGEHAND,
 ];
 
-let activeModule = MODULES[0];
+let activeModule = null;
 
 function renderNav() {
   $('module-nav').innerHTML = MODULES.map(m => `
@@ -24,7 +24,7 @@ function refreshProgress() {
   $('overall-label').textContent = `curso ${overall}%`;
   renderNav();
   refreshSlateTake();
-  activeModule.refreshProgressUi?.();
+  activeModule?.refreshProgressUi?.();
 }
 
 function checkAchievements() {
@@ -35,10 +35,12 @@ function checkAchievements() {
 }
 
 function setModule(id) {
-  activeModule.leave?.();
+  activeModule?.leave?.();
   activeModule = MODULES.find(m => m.id === id);
+  resetScene();
   activeModule.render($('module-content'));
   activeModule.renderControls($('controls'));
+  activeModule.enter?.();
   refreshProgress();
   window.scrollTo({ top: 0, behavior: sandboxState.motion ? 'smooth' : 'auto' });
 }
@@ -58,13 +60,17 @@ document.addEventListener('click', event => {
 });
 
 document.addEventListener('input', event => activeModule.handleInput?.(event));
+document.addEventListener('change', event => activeModule.handleChange?.(event));
 
 document.addEventListener('course:progress', () => {
   checkAchievements();
   refreshProgress();
 });
 
-onReset(() => {
+onReset(() => activeModule?.afterReset?.());
+onFrame(() => activeModule?.frame?.());
+
+onUserReset(() => {
   progress.resets += 1;
   saveProgress();
   checkAchievements();

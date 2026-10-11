@@ -1,22 +1,20 @@
-import { HOME, HERO_TOP, camA, camB, hero, syncShot } from '../sandbox/scene.js';
+import { HOME, camA, camB } from '../sandbox/scene.js';
+import { measureHeroFraming } from '../sandbox/framing.js';
 import {
-  sandboxState, dur, onFrame, onReset, snapshotBaseline, killShotMotion, placeShotAtHome,
-  placeHeroOnMark, setCompare, refreshFrameLabels,
+  sandboxState, dur, onFrame, snapshotBaseline, killShotMotion, placeHeroOnMark, setCompare, refreshFrameLabels,
 } from '../sandbox/stage.js';
 import { dolly, truck, pedestal, pan, tilt, orbitAround, crane, tracking } from '../sandbox/camera-moves.js';
 import { showCode } from '../code-panel.js';
 import { slate } from '../course-ui.js';
-import { progress, announceProgress } from '../progress.js';
-import { $, escapeHtml } from '../html.js';
+import { progress } from '../progress.js';
+import { createLesson, panelTabs, rangeField, selectField } from '../lesson.js';
+import { $ } from '../html.js';
 
 const gsap = window.gsap;
 const CHALLENGE_START_Z = 10;
 const CHALLENGE_EASES = ['none', 'power1.inOut', 'power2.inOut', 'power3.out', 'sine.inOut', 'expo.out'];
 
-progress.m1 = { known: [], seen: [], compared: false, quiz: {}, challenge: false, ...progress.m1 };
-const moduleProgress = progress.m1;
-
-const ui = { panelTab: 'moves', challengeActive: false };
+const ui = { active: false, panelTab: 'moves', challengeActive: false };
 const challengeDraft = { distance: 7.5, duration: 1.5, ease: 'none' };
 
 const TERMS = [
@@ -259,14 +257,17 @@ const DIAGRAM_SVG = `
   </g>
 </svg>`;
 
-function addSeen(...termIds) {
-  termIds.forEach(id => { if (!moduleProgress.seen.includes(id)) moduleProgress.seen.push(id); });
-  announceProgress();
-}
+const lesson = createLesson({ key: 'm1', terms: TERMS, quiz: QUIZ, achievement: ACHIEVEMENT });
+progress.m1.compared ??= false;
+
+const extraSteps = () => [
+  [lesson.state.compared, 'Pan × truck lado a lado'],
+  [lesson.state.challenge, 'Mini-desafio do push-in'],
+];
 
 function runMove(key) {
   const move = MOVES[key];
-  if (sandboxState.compare) setCompare(false);
+  if (sandboxState.compareShots) setCompare(null);
   if (ui.challengeActive) exitChallenge();
   killShotMotion(camA);
   snapshotBaseline();
@@ -277,13 +278,17 @@ function runMove(key) {
   sandboxState.tags.A = move.label;
   refreshFrameLabels();
   progress.takes += 1;
-  addSeen(move.term);
+  lesson.markSeen(move.term);
 }
 
 function runPanTruckComparison() {
   if (ui.challengeActive) exitChallenge();
-  setCompare(true);
-  [camA, camB].forEach(placeShotAtHome);
+  setCompare([camA, camB]);
+  [camA, camB].forEach(shot => {
+    killShotMotion(shot);
+    shot.rig.pos.copy(HOME.pos);
+    shot.rig.target.copy(HOME.target);
+  });
   placeHeroOnMark();
   snapshotBaseline();
   const lateral = 2.5;
@@ -295,22 +300,13 @@ function runPanTruckComparison() {
   refreshFrameLabels();
   showCode(COMPARE_PAN_TRUCK);
   progress.takes += 1;
-  moduleProgress.compared = true;
-  addSeen('pan', 'truck');
-}
-
-function measureHeroFraming(shot) {
-  syncShot(shot);
-  const top = hero.position.clone().setY(HERO_TOP).project(shot.cam);
-  const feet = hero.position.clone().setY(0).project(shot.cam);
-  return {
-    share: (top.y - feet.y) / 2,
-    headInFrame: top.y <= 0.98 && Math.abs(top.x) <= 1,
-  };
+  lesson.state.compared = true;
+  lesson.markSeen('pan', 'truck');
 }
 
 function updateChallengeHud() {
   const hud = document.querySelector('#frame-a .frame-hud');
+  if (!ui.active) return;
   if (!ui.challengeActive) {
     hud.hidden = true;
     return;
@@ -322,7 +318,7 @@ function updateChallengeHud() {
 }
 
 function enterChallenge() {
-  if (sandboxState.compare) setCompare(false);
+  if (sandboxState.compareShots) setCompare(null);
   killShotMotion(camA);
   placeHeroOnMark();
   ui.challengeActive = true;
@@ -338,6 +334,7 @@ function enterChallenge() {
 function exitChallenge() {
   ui.challengeActive = false;
   sandboxState.tags.A = '';
+  document.querySelector('#frame-a .frame-hud').hidden = true;
   if (ui.panelTab === 'challenge') {
     ui.panelTab = 'moves';
     renderControls($('controls'));
@@ -371,7 +368,6 @@ function runChallenge() {
   $('ch-result').className = 'ch-result';
   $('ch-result').textContent = sandboxState.motion ? 'Rodando... 🎬' : 'Modo instantâneo: avaliando pela duração que você escolheu.';
   progress.takes += 1;
-  announceProgress();
   camA.active = gsap.to(camA.rig.pos, {
     z: distance,
     duration: dur(duration),
@@ -398,111 +394,10 @@ function judgeChallenge(duration, ease) {
     : '';
   result.className = 'ch-result ok';
   result.textContent = `Valeu, é take! Push-in de ${duration}s, herói em ${percent}% do quadro.${easeNote}`;
-  if (!moduleProgress.challenge) {
-    moduleProgress.challenge = true;
-    announceProgress();
-  }
-}
-
-function quizStatus() {
-  const answered = QUIZ.filter(q => moduleProgress.quiz[q.id] !== undefined);
-  const correct = answered.filter(q => moduleProgress.quiz[q.id] === q.answer).length;
-  return { answered: answered.length, correct, passed: answered.length === QUIZ.length && correct >= 2 };
-}
-
-function status() {
-  const covered = TERMS.filter(t => moduleProgress.known.includes(t.id) || moduleProgress.seen.includes(t.id)).length;
-  const quiz = quizStatus();
-  const done = covered + Number(moduleProgress.compared) + Number(quiz.passed) + Number(moduleProgress.challenge);
-  const total = TERMS.length + 3;
-  return { covered, quiz, percent: Math.round((done / total) * 100), complete: done === total };
-}
-
-function termCard(term) {
-  const known = moduleProgress.known.includes(term.id);
-  return `<article class="term ${known ? 'is-known' : ''}" id="term-${term.id}">
-    <header class="term-head">
-      <h3>${term.name}</h3><span class="aka">${term.aka}</span><span class="term-status"></span>
-    </header>
-    <div class="term-body">
-      <p class="analogy">${term.analogy}</p>
-      <p class="definition"><b>Em uma frase:</b> ${term.definition}</p>
-      <button class="link-btn reopen" data-action="reopen" data-term="${term.id}">Rever mesmo assim</button>
-      <div class="demo-row">${term.demos.map(([key, label]) => `<button class="btn" data-move="${key}">▶ ${label}</button>`).join('')}</div>
-      <details class="more">
-        <summary>Detalhes</summary>
-        <dl>
-          <dt>Na tela</dt><dd>${term.screen}</dd>
-          <dt>No código</dt><dd>${term.code}</dd>
-        </dl>
-      </details>
-      <button class="link-btn" data-action="alt" data-term="${term.id}">Não colou? Tenta de outro jeito</button>
-      <p class="alt" id="alt-${term.id}" hidden>${term.alt}</p>
-    </div>
-  </article>`;
-}
-
-function refreshTermStatuses() {
-  TERMS.forEach(term => {
-    const card = $(`term-${term.id}`);
-    if (!card) return;
-    const known = moduleProgress.known.includes(term.id);
-    const seen = moduleProgress.seen.includes(term.id);
-    card.classList.toggle('is-known', known);
-    const label = card.querySelector('.term-status');
-    label.textContent = seen ? '● filmado' : known ? 'já conhecia' : '';
-    label.classList.toggle('known', known && !seen);
-  });
-}
-
-function quizMarkup() {
-  const { answered: answeredCount, correct, passed } = quizStatus();
-  const questions = QUIZ.map((q, qi) => {
-    const chosen = moduleProgress.quiz[q.id];
-    const answered = chosen !== undefined;
-    const options = q.options.map((option, oi) => {
-      let cls = '';
-      if (answered && oi === q.answer) cls = 'right';
-      else if (answered && oi === chosen) cls = 'wrong';
-      return `<button class="opt ${cls}" data-quiz="${q.id}" data-opt="${oi}" ${answered ? 'disabled' : ''}>${escapeHtml(option)}</button>`;
-    }).join('');
-    const isRight = chosen === q.answer;
-    const feedback = answered
-      ? `<p class="q-feedback ${isRight ? 'right' : 'wrong'}"><b>${isRight ? 'Isso!' : 'Quase.'}</b> ${q.why[chosen]}${isRight ? '' : ` A resposta é <b>${escapeHtml(q.options[q.answer])}</b>: ${q.why[q.answer]}`}</p>`
-      : '';
-    return `<fieldset class="q"><legend>${qi + 1}. ${escapeHtml(q.text)}</legend><div class="opts">${options}</div>${feedback}</fieldset>`;
-  }).join('');
-  const foot = answeredCount === QUIZ.length
-    ? `<div class="quiz-foot"><span>${correct}/${QUIZ.length} ${passed ? '· passou ✔' : '· precisa de 2'}</span><button class="btn" data-action="quiz-retry">Refazer</button></div>`
-    : '';
-  return questions + foot;
-}
-
-function awardChecklistItems(current) {
-  const item = (done, text) => `<li class="${done ? 'done' : ''}">${text}</li>`;
-  return [
-    item(current.covered === TERMS.length, `Termos vistos ou já conhecidos: ${current.covered}/${TERMS.length}`),
-    item(moduleProgress.compared, 'Pan × truck lado a lado'),
-    item(current.quiz.passed, `Checagem: ${current.quiz.correct}/${QUIZ.length} (precisa de 2)`),
-    item(moduleProgress.challenge, 'Mini-desafio do push-in'),
-  ].join('');
-}
-
-function refreshProgressUi() {
-  const current = status();
-  refreshTermStatuses();
-  const checklist = $('award-checklist');
-  if (!checklist) return;
-  checklist.innerHTML = awardChecklistItems(current);
-  const unlocked = progress.achievements.includes(ACHIEVEMENT.id);
-  $('award').classList.toggle('unlocked', unlocked);
-  $('award-state').textContent = unlocked ? 'Desbloqueado' : `${current.percent}% da cena filmada`;
-  $('challenge-status').textContent = moduleProgress.challenge ? '● Desafio concluído' : '○ Ainda não filmado';
+  lesson.completeChallenge();
 }
 
 function render(container) {
-  const knownSet = new Set(moduleProgress.known);
-  const cheatRows = TERMS.map(t => `<tr><td>${t.name}</td><td>${t.short}</td><td>${t.screen}</td><td>${escapeHtml(t.code)}</td></tr>`).join('');
   container.innerHTML = `
     <div class="hero-title">
       ${slate(1, 'Movimento')}
@@ -510,21 +405,8 @@ function render(container) {
       <p class="lede">Oito movimentos, uma ideia: ou a câmera <b>anda</b> (position), ou ela <b>gira a cabeça</b> (rotation). Quem separa os dois já fala a língua do set.</p>
       <p class="lede-muted">O sandbox ao lado está em <b>visão de set</b>: a câmera laranja é a câmera da cena, a caixinha no canto é o que ela filma. Arraste a vista para girar o set.</p>
     </div>
-
-    <section class="section" id="ask">
-      <span class="eyebrow">1 · Antes do primeiro take</span>
-      <h2>Quais você já conhece?</h2>
-      <p>Marque os que já são de casa. Eles ficam resumidos e contam como vistos. Spoiler: o OrbitControls já te apresentou uns dois.</p>
-      <div class="chips">${TERMS.map(t => `<button class="chip" data-known="${t.id}" aria-pressed="${knownSet.has(t.id)}">${t.name}</button>`).join('')}</div>
-    </section>
-
-    <section class="section" id="terms">
-      <span class="eyebrow">2 · Os movimentos</span>
-      <h2>Analogia, frase, demo</h2>
-      <p>Cada termo começa com algo do mundo real. Aperte ▶ e veja no sandbox o que mudou no código.</p>
-      <div class="term-list">${TERMS.map(termCard).join('')}</div>
-    </section>
-
+    ${lesson.askSection({ number: 1, intro: 'Marque os que já são de casa. Eles ficam resumidos e contam como vistos. Spoiler: o OrbitControls já te apresentou uns dois.' })}
+    ${lesson.termsSection({ number: 2, title: 'Analogia, frase, demo', intro: 'Cada termo começa com algo do mundo real. Aperte ▶ e veja no sandbox o que mudou no código.' })}
     <section class="section critical" id="critical">
       <span class="eyebrow">3 · Ponto crítico</span>
       <h2>Andar ≠ girar a cabeça</h2>
@@ -537,132 +419,49 @@ function render(container) {
       <p>O orbit é o híbrido: anda em círculo (position) e gira pra continuar mirando (rotation via lookAt).</p>
       <div><button class="btn primary" data-action="compare">▶ Rodar pan × truck lado a lado</button></div>
     </section>
-
-    <section class="section" id="cheat">
-      <span class="eyebrow">4 · Cola</span>
-      <h2>Tabela pra consultar</h2>
-      <div class="table-wrap"><table class="cheat">
-        <thead><tr><th>Termo</th><th>Analogia</th><th>O que muda na tela</th><th>O que mexer no código</th></tr></thead>
-        <tbody>${cheatRows}</tbody>
-      </table></div>
-    </section>
-
-    <section class="section" id="quiz">
-      <span class="eyebrow">5 · Checagem rápida</span>
-      <h2>Três perguntas</h2>
-      <div class="quiz" id="quiz-body">${quizMarkup()}</div>
-    </section>
-
-    <section class="section" id="challenge">
-      <span class="eyebrow">6 · Mini-desafio</span>
-      <h2>O push-in lento</h2>
-      <p>O diretor pediu: <i>"slow push-in, terminando enquadrado no herói"</i>. A câmera começa a ${CHALLENGE_START_Z}m dele. Você escolhe onde ela para, quanto tempo leva e o ease.</p>
-      <ul class="criteria">
-        <li>Lento: 3 segundos ou mais</li>
-        <li>No fim, a cabeça do herói inteira no quadro</li>
-        <li>O herói ocupando pelo menos metade da altura do quadro</li>
-      </ul>
-      <div class="challenge-actions">
-        <button class="btn primary" data-action="open-challenge">Abrir desafio no sandbox</button>
-        <span class="panel-note" id="challenge-status"></span>
-      </div>
-    </section>
-
-    <section class="section" id="achievement">
-      <span class="eyebrow">7 · Achievement</span>
-      <div class="award" id="award">
-        <div class="ico" aria-hidden="true">${ACHIEVEMENT.icon}</div>
-        <div>
-          <h3>${ACHIEVEMENT.name}</h3>
-          <p id="award-state"></p>
-          <ul class="criteria" id="award-checklist"></ul>
-        </div>
-      </div>
-    </section>`;
+    ${lesson.cheatSection(4)}
+    ${lesson.quizSection(5)}
+    ${lesson.challengeSection({
+      number: 6,
+      title: 'O push-in lento',
+      brief: `O diretor pediu: <i>"slow push-in, terminando enquadrado no herói"</i>. A câmera começa a ${CHALLENGE_START_Z}m dele. Você escolhe onde ela para, quanto tempo leva e o ease.`,
+      criteria: ['Lento: 3 segundos ou mais', 'No fim, a cabeça do herói inteira no quadro', 'O herói ocupando pelo menos metade da altura do quadro'],
+    })}
+    ${lesson.awardSection(7)}`;
 }
 
 function challengeFormMarkup() {
   return `
     <div class="challenge-form">
-      <div class="field">
-        <label for="ch-dist">Para a <output id="ch-dist-out">${challengeDraft.distance.toFixed(1)} m</output></label>
-        <input type="range" id="ch-dist" min="1.5" max="9.5" step="0.1" value="${challengeDraft.distance}">
-      </div>
-      <div class="field">
-        <label for="ch-dur">Duração <output id="ch-dur-out">${challengeDraft.duration} s</output></label>
-        <input type="range" id="ch-dur" min="0.5" max="8" step="0.5" value="${challengeDraft.duration}">
-      </div>
-      <div class="field">
-        <label for="ch-ease">Ease</label>
-        <select id="ch-ease">${CHALLENGE_EASES.map(e => `<option value="${e}" ${e === challengeDraft.ease ? 'selected' : ''}>${e}</option>`).join('')}</select>
-      </div>
+      ${rangeField({ id: 'ch-dist', label: 'Para a', min: 1.5, max: 9.5, step: 0.1, value: challengeDraft.distance, format: v => `${Number(v).toFixed(1)} m` })}
+      ${rangeField({ id: 'ch-dur', label: 'Duração', min: 0.5, max: 8, step: 0.5, value: challengeDraft.duration, format: v => `${v} s` })}
+      ${selectField({ id: 'ch-ease', label: 'Ease', options: CHALLENGE_EASES.map(e => [e, e]), value: challengeDraft.ease })}
     </div>
     <div class="challenge-actions">
       <button class="btn primary" data-action="challenge-run">Ação! 🎬</button>
       <button class="btn" data-action="open-challenge">Voltar pra marca</button>
     </div>
-    <p class="ch-result" id="ch-result" aria-live="polite">${moduleProgress.challenge ? 'Você já fechou esse desafio. Pode filmar de novo por esporte.' : 'Os valores iniciais estão errados de propósito. Ajuste e grite ação.'}</p>`;
+    <p class="ch-result" id="ch-result" aria-live="polite">${lesson.state.challenge ? 'Você já fechou esse desafio. Pode filmar de novo por esporte.' : 'Os valores iniciais estão errados de propósito. Ajuste e grite ação.'}</p>`;
 }
 
 function renderControls(panel) {
   const isChallenge = ui.panelTab === 'challenge';
-  const moveButtons = Object.entries(MOVES).map(([key, move]) => `<button class="btn" data-move="${key}">${move.label}</button>`).join('');
+  const moveButtons = Object.entries(MOVES).map(([key, move]) => `<button class="btn" data-demo="${key}">${move.label}</button>`).join('');
   panel.innerHTML = `
-    <div class="tabs" role="tablist">
-      <button class="tab" role="tab" aria-selected="${!isChallenge}" data-tab="moves">Movimentos</button>
-      <button class="tab" role="tab" aria-selected="${isChallenge}" data-tab="challenge">Desafio</button>
-    </div>
+    ${panelTabs(ui.panelTab, [['moves', 'Movimentos'], ['challenge', 'Desafio']])}
     ${isChallenge ? challengeFormMarkup() : `<div class="moves-grid">${moveButtons}<button class="btn wide" data-action="compare">Pan × Truck lado a lado</button></div>`}`;
   if (isChallenge) showChallengeCode();
 }
 
-function toggleKnown(button) {
-  const id = button.dataset.known;
-  const index = moduleProgress.known.indexOf(id);
-  if (index >= 0) moduleProgress.known.splice(index, 1);
-  else moduleProgress.known.push(id);
-  button.setAttribute('aria-pressed', String(index < 0));
-  announceProgress();
-}
-
-function answerQuiz(button) {
-  moduleProgress.quiz[button.dataset.quiz] = Number(button.dataset.opt);
-  $('quiz-body').innerHTML = quizMarkup();
-  announceProgress();
-}
-
 function handleClick(button) {
-  const { move, tab, known, quiz, action, term } = button.dataset;
-  if (move) return runMove(move);
-  if (known) return toggleKnown(button);
-  if (quiz) return answerQuiz(button);
+  if (lesson.handleClick(button)) return;
+  const { demo, tab, action } = button.dataset;
+  if (demo) return runMove(demo);
   if (tab === 'challenge') return enterChallenge();
   if (tab === 'moves') return exitChallenge();
-
-  switch (action) {
-    case 'alt': {
-      const alt = $(`alt-${term}`);
-      alt.hidden = !alt.hidden;
-      break;
-    }
-    case 'reopen':
-      $(`term-${term}`).classList.add('expanded');
-      break;
-    case 'compare':
-      runPanTruckComparison();
-      break;
-    case 'quiz-retry':
-      moduleProgress.quiz = {};
-      $('quiz-body').innerHTML = quizMarkup();
-      announceProgress();
-      break;
-    case 'open-challenge':
-      enterChallenge();
-      break;
-    case 'challenge-run':
-      runChallenge();
-      break;
-  }
+  if (action === 'compare') return runPanTruckComparison();
+  if (action === 'open-challenge') return enterChallenge();
+  if (action === 'challenge-run') return runChallenge();
 }
 
 function handleInput(event) {
@@ -673,12 +472,7 @@ function handleInput(event) {
   showChallengeCode();
 }
 
-function leave() {
-  if (ui.challengeActive) exitChallenge();
-}
-
 onFrame(updateChallengeHud);
-onReset(leave);
 
 export default {
   id: 1,
@@ -689,7 +483,17 @@ export default {
   renderControls,
   handleClick,
   handleInput,
-  status,
-  refreshProgressUi,
-  leave,
+  status: () => lesson.status(extraSteps().map(([done]) => done)),
+  refreshProgressUi: () => lesson.refresh(extraSteps()),
+  enter() {
+    ui.active = true;
+    ui.panelTab = 'moves';
+  },
+  afterReset() {
+    if (ui.challengeActive) exitChallenge();
+  },
+  leave() {
+    if (ui.challengeActive) exitChallenge();
+    ui.active = false;
+  },
 };

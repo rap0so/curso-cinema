@@ -1,7 +1,11 @@
 import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import {
-  renderer, scene, setCam, orbit, camA, camB, hero, heroModel, syncShot, setShotVisible,
-  HOME, SET_CAM_HOME, MONITOR_ASPECT, FOCAL_MM, COLOR,
+  renderer, scene, setCam, orbit, camA, SHOTS, hero, heroModel, heroVisor, syncShot, setShotVisible, resetShot,
+  setTwoShotScene, placeCratesHome, SET_CAM_HOME, MONITOR_ASPECT, COLOR,
 } from './scene.js';
 import { storage } from '../progress.js';
 import { $ } from '../html.js';
@@ -10,33 +14,46 @@ import { showCode } from '../code-panel.js';
 const gsap = window.gsap;
 const MOTION_KEY = 'cine-course.motion';
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const DOF_DEFAULTS = { enabled: false, focus: 7, aperture: 0.0025, maxBlur: 0.012 };
 
 export const sandboxState = {
   motion: storage.read(MOTION_KEY, !prefersReducedMotion),
   setView: true,
-  compare: false,
-  tags: { A: '', B: '' },
+  compareShots: null,
+  tags: { A: '', B: '', C: '' },
   baseline: null,
+  dof: { ...DOF_DEFAULTS },
 };
 
 export const dur = seconds => (sandboxState.motion ? seconds : 0);
 
 const frameListeners = [];
 const resetListeners = [];
+const userResetListeners = [];
 export const onFrame = listener => frameListeners.push(listener);
 export const onReset = listener => resetListeners.push(listener);
+export const onUserReset = listener => userResetListeners.push(listener);
 
-export const visibleShots = () => (sandboxState.compare ? [camA, camB] : [camA]);
+export const visibleShots = () => sandboxState.compareShots ?? [camA];
 
 const READOUT_KEYS = ['px', 'py', 'pz', 'rx', 'ry', 'rz', 'fov'];
 const READOUT_NAMES = { px: 'position.x', py: 'position.y', pz: 'position.z', rx: 'rotation.x', ry: 'rotation.y', rz: 'rotation.z', fov: 'fov' };
 
-function readCamera(cam) {
+function readCamera(shot) {
+  const { cam } = shot;
   return { px: cam.position.x, py: cam.position.y, pz: cam.position.z, rx: cam.rotation.x, ry: cam.rotation.y, rz: cam.rotation.z, fov: cam.fov };
 }
 
+let extraReadout = null;
+let extraSignature = '';
+export function setExtraReadout(rowsProvider) {
+  extraReadout = rowsProvider;
+  extraSignature = '';
+}
+const readExtraRows = () => extraReadout?.() ?? [];
+
 function buildReadout() {
-  const multi = sandboxState.compare;
+  const multi = Boolean(sandboxState.compareShots);
   $('readout').innerHTML = visibleShots().map(shot => {
     const id = shot.name;
     const tag = multi ? `<span class="cam-tag ${id.toLowerCase()}">Cam ${id}</span>` : '';
@@ -49,30 +66,54 @@ function buildReadout() {
 
 export function snapshotBaseline() {
   visibleShots().forEach(syncShot);
-  sandboxState.baseline = Object.fromEntries(visibleShots().map(shot => [shot.name, readCamera(shot.cam)]));
+  sandboxState.baseline = {
+    shots: Object.fromEntries(visibleShots().map(shot => [shot.name, readCamera(shot)])),
+    extra: Object.fromEntries(readExtraRows().map(row => [row.name, row.value])),
+  };
 }
 
 let lastChangedText = '';
 function updateReadout() {
   const changed = new Set();
+  const baseline = sandboxState.baseline;
   for (const shot of visibleShots()) {
-    const now = readCamera(shot.cam);
-    const base = sandboxState.baseline?.[shot.name];
+    const now = readCamera(shot);
+    const base = baseline?.shots[shot.name];
     for (const key of READOUT_KEYS) {
       const cell = $('readout').querySelector(`[data-k="${shot.name}-${key}"]`);
       if (!cell) continue;
-      const text = key === 'fov' ? `${now.fov.toFixed(1)}° (${FOCAL_MM}mm)` : now[key].toFixed(2);
+      const text = key === 'fov' ? `${now.fov.toFixed(1)}° (${Math.round(shot.focal)}mm)` : now[key].toFixed(2);
       if (cell.textContent !== text) cell.textContent = text;
       const isChanged = base && Math.abs(now[key] - base[key]) > 0.01;
       cell.classList.toggle('changed', Boolean(isChanged));
       if (isChanged) changed.add(READOUT_NAMES[key]);
     }
   }
-  const text = changed.size ? [...changed].join(' · ') : (sandboxState.baseline ? 'nada (ainda)' : 'nada ainda');
+  updateExtraReadout(changed, baseline);
+  const text = changed.size ? [...changed].join(' · ') : (baseline ? 'nada (ainda)' : 'nada ainda');
   if (text !== lastChangedText) {
     $('changed-chip').innerHTML = `mudou → <b>${text}</b>`;
     lastChangedText = text;
   }
+}
+
+function updateExtraReadout(changed, baseline) {
+  const rows = readExtraRows();
+  const container = $('readout-extra');
+  const signature = rows.map(row => row.name).join('|');
+  if (signature !== extraSignature) {
+    container.innerHTML = rows.map(row => `<span class="prop">${row.name}</span><span class="val" data-x="${row.name}"></span>`).join('');
+    container.hidden = rows.length === 0;
+    extraSignature = signature;
+  }
+  rows.forEach(row => {
+    const cell = container.querySelector(`[data-x="${row.name}"]`);
+    if (cell.textContent !== row.text) cell.textContent = row.text;
+    const base = baseline?.extra[row.name];
+    const isChanged = base !== undefined && (typeof row.value === 'number' ? Math.abs(row.value - base) > 0.005 : row.value !== base);
+    cell.classList.toggle('changed', isChanged);
+    if (isChanged) changed.add(row.name);
+  });
 }
 
 let toastTimer = 0;
@@ -81,7 +122,19 @@ export function notify(message) {
   toast.textContent = message;
   toast.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { toast.hidden = true; }, 3200);
+  toastTimer = setTimeout(() => { toast.hidden = true; }, 3400);
+}
+
+export function caption(text) {
+  const el = $('caption');
+  el.textContent = text;
+  el.hidden = !text;
+}
+
+export const fadeOverlay = () => $('frame-a').querySelector('.fade');
+
+export function setThirds(on) {
+  $('stage').classList.toggle('show-thirds', on);
 }
 
 export function killShotMotion(shot) {
@@ -89,24 +142,28 @@ export function killShotMotion(shot) {
   shot.active = null;
 }
 
-export function placeShotAtHome(shot) {
-  killShotMotion(shot);
-  shot.rig.pos.copy(HOME.pos);
-  shot.rig.target.copy(HOME.target);
-}
-
 export function placeHeroOnMark() {
   gsap.killTweensOf([hero.position, hero.rotation]);
-  hero.position.set(0, 0, 0);
-  hero.rotation.set(0, 0, 0);
+  setTwoShotScene(false);
 }
 
-export function setCompare(on) {
-  sandboxState.compare = on;
-  setShotVisible(camB, on);
-  if (!on) sandboxState.tags.B = '';
+export function setCompare(shots) {
+  const list = shots && shots.length > 1 ? shots : null;
+  sandboxState.compareShots = list;
+  SHOTS.forEach(shot => setShotVisible(shot, shot === camA || Boolean(list?.includes(shot))));
+  if (!list) Object.assign(sandboxState.tags, { B: '', C: '' });
   buildReadout();
   relayout();
+}
+
+export function setDof(changes) {
+  Object.assign(sandboxState.dof, changes);
+  if (sandboxState.dof.enabled) ensureComposer();
+  if (bokehPass) {
+    bokehPass.uniforms.focus.value = sandboxState.dof.focus;
+    bokehPass.uniforms.aperture.value = sandboxState.dof.aperture;
+    bokehPass.uniforms.maxblur.value = sandboxState.dof.maxBlur;
+  }
 }
 
 function setSetView(on) {
@@ -125,14 +182,22 @@ function setMotion(on) {
   button.title = on ? 'Animações ligadas. Clique para resultado instantâneo.' : 'Modo instantâneo (prefers-reduced-motion). Clique para animar.';
 }
 
-function resetScene() {
-  [camA, camB].forEach(placeShotAtHome);
+export function resetScene() {
+  gsap.killTweensOf(fadeOverlay());
+  SHOTS.forEach(resetShot);
   placeHeroOnMark();
+  placeCratesHome();
+  heroVisor.color.setHex(COLOR.daylight);
+  heroVisor.emissive.setHex(COLOR.daylight);
   setCam.position.copy(SET_CAM_HOME.pos);
   orbit.target.copy(SET_CAM_HOME.target);
   orbit.update();
-  sandboxState.tags = { A: '', B: '' };
-  if (sandboxState.compare) setCompare(false);
+  sandboxState.tags = { A: '', B: '', C: '' };
+  setCompare(null);
+  setDof({ ...DOF_DEFAULTS });
+  setThirds(false);
+  caption('');
+  fadeOverlay().style.opacity = '0';
   sandboxState.baseline = null;
   showCode(null);
   refreshFrameLabels();
@@ -140,7 +205,7 @@ function resetScene() {
 }
 
 const stage = $('stage');
-const frames = { set: $('frame-set'), A: $('frame-a'), B: $('frame-b') };
+const frames = { set: $('frame-set'), A: $('frame-a'), B: $('frame-b'), C: $('frame-c') };
 let stageSize = { w: 1, h: 1 };
 let views = [];
 
@@ -154,29 +219,45 @@ function fitAspect(x, y, w, h, aspect) {
   return { x: x + (w - width) / 2, y: y + (h - height) / 2, w: width, h: height };
 }
 
+function gridRects(count, w, h) {
+  const gap = 6;
+  let best = null;
+  for (let cols = 1; cols <= count; cols++) {
+    const rows = Math.ceil(count / cols);
+    const cellW = (w - gap * (cols - 1)) / cols;
+    const cellH = (h - gap * (rows - 1)) / rows;
+    const size = fitAspect(0, 0, cellW, cellH, MONITOR_ASPECT).w;
+    if (!best || size > best.size) best = { cols, cellW, cellH, size };
+  }
+  return Array.from({ length: count }, (_, i) => {
+    const col = i % best.cols;
+    const row = Math.floor(i / best.cols);
+    return fitAspect(col * (best.cellW + gap), row * (best.cellH + gap), best.cellW, best.cellH, MONITOR_ASPECT);
+  });
+}
+
+function insetRects(count, w, h) {
+  const margin = 10;
+  const insetW = count === 1
+    ? Math.min(w * 0.4, 360)
+    : Math.min((w - margin * (count + 1)) / count, 300);
+  const insetH = insetW / MONITOR_ASPECT;
+  return Array.from({ length: count }, (_, i) => ({
+    x: count === 1 ? w - insetW - margin : margin + i * (insetW + margin),
+    y: h - insetH - margin,
+    w: insetW,
+    h: insetH,
+  }));
+}
+
 function computeViews(w, h) {
-  const { setView, compare } = sandboxState;
-  if (setView) {
-    const margin = 10;
-    const insetW = Math.min(w * (compare ? 0.42 : 0.4), compare ? 300 : 360);
-    const insetH = insetW / MONITOR_ASPECT;
-    return [
-      { kind: 'set', rect: { x: 0, y: 0, w, h } },
-      ...visibleShots().map((shot, i) => ({
-        kind: 'shot', shot,
-        rect: { x: compare && i === 0 ? margin : w - insetW - margin, y: h - insetH - margin, w: insetW, h: insetH },
-      })),
-    ];
+  const shots = visibleShots();
+  if (sandboxState.setView) {
+    const rects = insetRects(shots.length, w, h);
+    return [{ kind: 'set', rect: { x: 0, y: 0, w, h } }, ...shots.map((shot, i) => ({ kind: 'shot', shot, rect: rects[i] }))];
   }
-  if (compare) {
-    const gap = 6;
-    const half = (w - gap) / 2;
-    return [
-      { kind: 'shot', shot: camA, rect: fitAspect(0, 0, half, h, MONITOR_ASPECT) },
-      { kind: 'shot', shot: camB, rect: fitAspect(half + gap, 0, half, h, MONITOR_ASPECT) },
-    ];
-  }
-  return [{ kind: 'shot', shot: camA, rect: fitAspect(0, 0, w, h, MONITOR_ASPECT) }];
+  const rects = gridRects(shots.length, w, h);
+  return shots.map((shot, i) => ({ kind: 'shot', shot, rect: rects[i] }));
 }
 
 function placeFrame(el, rect) {
@@ -190,6 +271,7 @@ function relayout() {
   setCam.aspect = w / h;
   setCam.updateProjectionMatrix();
   Object.values(frames).forEach(el => { el.hidden = true; });
+  const single = !sandboxState.setView && !sandboxState.compareShots;
   for (const view of views) {
     if (view.kind === 'set') {
       placeFrame(frames.set, view.rect);
@@ -197,18 +279,45 @@ function relayout() {
     }
     const el = frames[view.shot.name];
     placeFrame(el, view.rect);
-    el.classList.toggle('fullscreen', !sandboxState.setView && !sandboxState.compare);
+    el.classList.toggle('fullscreen', single);
   }
   refreshFrameLabels();
 }
 
 export function refreshFrameLabels() {
-  ['A', 'B'].forEach(name => {
+  ['A', 'B', 'C'].forEach(name => {
+    const shot = SHOTS.find(s => s.name === name);
     const tag = sandboxState.tags[name] ? ` · ${sandboxState.tags[name]}` : '';
-    frames[name].querySelector('.txt').textContent = `Cam ${name} · ${FOCAL_MM}mm${tag}`;
+    frames[name].querySelector('.txt').textContent = `Cam ${name} · ${Math.round(shot.focal)}mm${tag}`;
   });
   const mode = sandboxState.setView ? 'Visão de set' : 'Monitor';
-  $('sandbox-title').innerHTML = `Sandbox · <b>${mode}</b> · Cam A ${FOCAL_MM}mm`;
+  $('sandbox-title').innerHTML = `Sandbox · <b>${mode}</b> · Cam A ${Math.round(camA.focal)}mm`;
+}
+
+let composer = null;
+let renderPass = null;
+let bokehPass = null;
+let composerSize = '';
+
+function ensureComposer() {
+  if (composer) return;
+  composer = new EffectComposer(renderer);
+  renderPass = new RenderPass(scene, camA.cam);
+  const { focus, aperture, maxBlur } = sandboxState.dof;
+  bokehPass = new BokehPass(scene, camA.cam, { focus, aperture, maxblur: maxBlur });
+  composer.addPass(renderPass);
+  composer.addPass(bokehPass);
+  composer.addPass(new OutputPass());
+}
+
+function renderWithDepthOfField(rect) {
+  const size = `${Math.round(rect.w)}x${Math.round(rect.h)}`;
+  if (size !== composerSize) {
+    composer.setPixelRatio(renderer.getPixelRatio());
+    composer.setSize(Math.round(rect.w), Math.round(rect.h));
+    composerSize = size;
+  }
+  composer.render();
 }
 
 function renderViews() {
@@ -222,8 +331,35 @@ function renderViews() {
     const glY = h - y - vh;
     renderer.setViewport(x, glY, vw, vh);
     renderer.setScissor(x, glY, vw, vh);
-    renderer.render(scene, view.kind === 'set' ? setCam : view.shot.cam);
+    if (view.kind === 'shot' && view.shot === camA && sandboxState.dof.enabled && composer) renderWithDepthOfField(view.rect);
+    else renderer.render(scene, view.kind === 'set' ? setCam : view.shot.cam);
   }
+}
+
+// Reading the on-screen WebGL canvas after render returns black in some browsers, so stills go through a render target.
+export function renderStill(shot, targetCanvas) {
+  syncShot(shot);
+  const width = targetCanvas.width * 2;
+  const height = targetCanvas.height * 2;
+  const target = new THREE.WebGLRenderTarget(width, height, { samples: 4 });
+  target.texture.colorSpace = THREE.SRGBColorSpace;
+  renderer.setRenderTarget(target);
+  renderer.render(scene, shot.cam);
+  const pixels = new Uint8ClampedArray(width * height * 4);
+  renderer.readRenderTargetPixels(target, 0, 0, width, height, pixels);
+  renderer.setRenderTarget(null);
+  target.dispose();
+
+  const flipped = new ImageData(width, height);
+  const rowBytes = width * 4;
+  for (let row = 0; row < height; row++) {
+    flipped.data.set(pixels.subarray(row * rowBytes, (row + 1) * rowBytes), (height - 1 - row) * rowBytes);
+  }
+  const buffer = document.createElement('canvas');
+  buffer.width = width;
+  buffer.height = height;
+  buffer.getContext('2d').putImageData(flipped, 0, 0);
+  targetCanvas.getContext('2d').drawImage(buffer, 0, 0, targetCanvas.width, targetCanvas.height);
 }
 
 function startRenderLoop() {
@@ -237,9 +373,9 @@ function startRenderLoop() {
 
     visibleShots().forEach(syncShot);
     if (sandboxState.setView) orbit.update();
+    frameListeners.forEach(listener => listener());
     renderViews();
     updateReadout();
-    frameListeners.forEach(listener => listener());
   });
 }
 
@@ -253,7 +389,10 @@ export function startSandbox() {
 
   $('btn-setview').addEventListener('click', () => setSetView(!sandboxState.setView));
   $('btn-motion').addEventListener('click', () => setMotion(!sandboxState.motion));
-  $('btn-reset').addEventListener('click', resetScene);
+  $('btn-reset').addEventListener('click', () => {
+    resetScene();
+    userResetListeners.forEach(listener => listener());
+  });
 
   setMotion(sandboxState.motion);
   setSetView(true);

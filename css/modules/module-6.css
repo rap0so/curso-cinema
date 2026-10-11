@@ -1,0 +1,20 @@
+.shot-editor { display: flex; flex-direction: column; gap: 12px; }
+.shot-card { border: 1px solid var(--line); border-radius: 6px; background: var(--surface); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.shot-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.shot-head b { font: 800 20px/1 var(--display); letter-spacing: 0.04em; }
+.shot-actions { display: flex; gap: 6px; }
+.shot-card textarea {
+  width: 100%;
+  resize: vertical;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font: 13px/1.5 var(--mono);
+}
+.shot-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px 12px; align-items: end; }
+.storyboard { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.board-frame { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.board-frame canvas { width: 100%; height: auto; display: block; border-radius: 4px; background: var(--bg); }
+.board-frame figcaption { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.board-frame.is-playing canvas { outline: 2px solid var(--tungsten); outline-offset: 2px; }

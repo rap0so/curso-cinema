@@ -1,0 +1,27 @@
+.rhythm-top { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 14px; align-items: center; }
+.ease-curve { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.ease-curve svg { width: 100%; height: auto; display: block; overflow: visible; }
+.ease-curve figcaption { font: 500 10.5px var(--mono); color: var(--muted); letter-spacing: 0.04em; }
+.ease-curve figcaption b { color: var(--tungsten); font-weight: 500; }
+.beatbar { position: relative; display: flex; gap: 2px; height: 30px; border-radius: 4px; overflow: hidden; }
+.beat {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  background: var(--tungsten-soft);
+  border: 1px solid rgba(240, 166, 64, 0.45);
+  font: 500 10.5px var(--mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-inline: 4px;
+}
+.beat.is-hold { background: repeating-linear-gradient(-45deg, var(--surface-2) 0 6px, var(--surface) 6px 12px); border-color: var(--line); color: var(--muted); }
+.playhead { position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: var(--daylight); box-shadow: 0 0 6px var(--daylight); }
+
+@media (max-width: 480px) {
+  .rhythm-top { grid-template-columns: minmax(0, 1fr); }
+}
