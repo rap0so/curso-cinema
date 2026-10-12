@@ -12,11 +12,11 @@ Curso interativo de vocabulário de cinema pra quem já manda bem em three.js e 
 
 ## Rodar
 
-Precisa de servidor (ES modules não carregam via `file://`):
-
 ```sh
-npx serve .
+node server.mjs
 ```
+
+O server salva o progresso em `progress.json`. Commita ele pra levar o progresso junto no pull. Com `npx serve .` funciona, mas o progresso fica só no localStorage.
 
 ## Status
 
